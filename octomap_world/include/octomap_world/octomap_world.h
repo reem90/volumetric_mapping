@@ -48,7 +48,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <volumetric_map_base/world_base.h>
 #include <visualization_msgs/Marker.h>
 
-#include <octomap/OcTreeLUT.h>
 
 namespace volumetric_mapping {
 

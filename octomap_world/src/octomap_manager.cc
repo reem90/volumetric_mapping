@@ -222,8 +222,7 @@ void OctomapManager::subscribe() {
 }
 
 void OctomapManager::octomapCallback(const octomap_msgs::Octomap& msg) {
-    ROS_INFO( "Debug octomapCallback" );
-
+    ROS_INFO("Debug octomapCallback" );
     setOctomapFromMsg(msg);
     publishAll();
     ROS_INFO_ONCE("Got octomap from message.");
@@ -231,7 +230,6 @@ void OctomapManager::octomapCallback(const octomap_msgs::Octomap& msg) {
 
 void OctomapManager::advertiseServices() {
     ROS_INFO( "Debug 5" );
-
     reset_map_service_ = nh_private_.advertiseService(
                 "reset_map", &OctomapManager::resetMapCallback, this);
     publish_all_service_ = nh_private_.advertiseService(
@@ -278,8 +276,10 @@ void OctomapManager::advertisePublishers() {
 }
 
 void OctomapManager::publishAll() {
+    ROS_INFO("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$publishAll") ;
     if (latch_topics_ || occupied_nodes_pub_.getNumSubscribers() > 0 ||
             free_nodes_pub_.getNumSubscribers() > 0) {
+        ROS_INFO("publishAll TRUE") ;
         visualization_msgs::MarkerArray occupied_nodes, free_nodes;
         generateMarkerArray(world_frame_, &occupied_nodes, &free_nodes);
         occupied_nodes_pub_.publish(occupied_nodes);

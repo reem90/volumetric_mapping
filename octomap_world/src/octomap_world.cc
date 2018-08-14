@@ -37,7 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <numeric>
 #include <cmath>
-//#include <octomap/OcTreeLUT.h>
 #include <octomap/LabelOcTree.h>
 
 namespace volumetric_mapping {
@@ -179,20 +178,20 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
         {
             ROS_INFO("Debug") ;
             octomap::LabelOcTreeNode* node = octree_->search(p_G_point);
-            octomap::LabelOcTreeNode::Label single_voxel =node->getLabel() ;
 
-            //std::cout << single_voxel.object_ID ;
-              if (octree_->isNodeOccupied(node))
-              {
-                  ROS_INFO("******Debug2******") ;
-            //updateSingleVoxelInfo(node, class_index , certainty_val ) ;
-              }
+            if (octree_->isNodeOccupied(node))
+            {
+                ROS_INFO("******Debug2******") ;
+                updateSingleVoxelInfo(node, class_index , certainty_val ) ;
+            }
         }
         else
             ROS_INFO("cast ray return false");
     }
 
-
+//UpdateID() ;
+    updateIntrestValue() ;
+    updateOccupancy(&free_cells, &occupied_cells);
 
 }
 
@@ -1604,45 +1603,45 @@ void OctomapWorld::keyToCoord(const octomap::OcTreeKey& key,
 void OctomapWorld::UpdateID()
 {
 
-//    octomap::OcTreeLUT lut(16);
-//    // OcTreeKey start_key (32768, 32768, 32768);
-//    octomap::OcTreeKey neighbor_key;
+    //    octomap::OcTreeLUT lut(16);
+    //    // OcTreeKey start_key (32768, 32768, 32768);
+    //    octomap::OcTreeKey neighbor_key;
 
-//    for (octomap::LabelOcTree::leaf_iterator it = octree_->begin_leafs(),
-//         end = octree_->end_leafs(); it != end; ++it)
-//    {
-//        //  pcl::PointXYZ point(it.getX(), it.getY(), it.getZ());
-//        octomap::OcTreeKey start_key (it.getX(), it.getY(), it.getZ());
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::N, neighbor_key);
-//        //if(neighbor_key)
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::S, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::W, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::E, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::T, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::B, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::SE, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::SW, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::BS, neighbor_key)
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::TNW, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::BNW, neighbor_key);
-//        lut.genNeighborKey(start_key, octomap::OcTreeLUT::BSE, neighbor_key);
+    //    for (octomap::LabelOcTree::leaf_iterator it = octree_->begin_leafs(),
+    //         end = octree_->end_leafs(); it != end; ++it)
+    //    {
+    //        //  pcl::PointXYZ point(it.getX(), it.getY(), it.getZ());
+    //        octomap::OcTreeKey start_key (it.getX(), it.getY(), it.getZ());
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::N, neighbor_key);
+    //        //if(neighbor_key)
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::S, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::W, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::E, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::T, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::B, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::SE, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::SW, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::BS, neighbor_key)
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::TNW, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::BNW, neighbor_key);
+    //        lut.genNeighborKey(start_key, octomap::OcTreeLUT::BSE, neighbor_key);
 
-//        //        if (octree_->isNodeOccupied(*it)) {
-//        //            octomap::LabelOcTreeNode& node = *it;
-//        //            octomap::LabelOcTreeNode::Label& label = node.getLabel();
-//        //            //
-//        //            // std::vector<octomap::octomap::point3d> vec ;
-//        //            if(label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_CHAIR )
-//        //            {
-//        //            }
-//        //            else
-//        //            {
-//        //            }
-//    }
-//    //        else
-//    //        {
+    //        //        if (octree_->isNodeOccupied(*it)) {
+    //        //            octomap::LabelOcTreeNode& node = *it;
+    //        //            octomap::LabelOcTreeNode::Label& label = node.getLabel();
+    //        //            //
+    //        //            // std::vector<octomap::octomap::point3d> vec ;
+    //        //            if(label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_CHAIR )
+    //        //            {
+    //        //            }
+    //        //            else
+    //        //            {
+    //        //            }
+    //    }
+    //    //        else
+    //    //        {
 
-//    //        }
+    //    //        }
 
 }
 
@@ -1683,48 +1682,46 @@ void OctomapWorld::updateIntrestValue()
 void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class_index , double certainty_val )
 {
     ROS_INFO("UPDATE Voxels Info");
-    std::cout << "INDEX " << class_index << " Cer" << certainty_val << std::endl << std::flush ;
+    //std::cout << "INDEX " << class_index << " Cer" << certainty_val << std::endl << std::flush ;
     //we can fill the color as well
+    //octomap::LabelOcTreeNode::Label single_voxel =node->getLabel() ;
+    //std::cout << single_voxel.object_ID ;
 
     octomap::LabelOcTreeNode::Label& single_voxel =n->getLabel() ;
-    // std::cout << "1 " << n->label.object_certainty <<std::endl << std::flush ;
-    std::cout << "after " <<std::endl << std::flush ;
-    n->setLabel(5.0);
-    //std::cout << "after " <<std::endl << std::flush ;
 
-    std::cout << "1 " << single_voxel.object_ID <<std::endl << std::flush ;
+    single_voxel.object_certainty = certainty_val ;
 
 
-    //single_voxel.object_certainty = certainty_val ;
+    if (class_index == 0 )
+        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_FLOOR;
+    else if (class_index == 1)
+        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_WALL;
+    else if (class_index == 2)
+        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_TABLE;
+    else if (class_index == 3)
+        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_CHAIR;
+    else
+        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_NOT_LABELED;
 
 
-    //    if (class_index == 0 )
-    //        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_FLOOR;
-    //    else if (class_index == 1)
-    //        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_WALL;
-    //    else if (class_index == 2)
-    //        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_TABLE;
-    //    else if (class_index == 3)
-    //        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_CHAIR;
-    //    else if (class_index == 4)
-    //        single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_NOT_LABELED;
+    ROS_INFO ("Class Type is %d " ,single_voxel.object_class ) ;
 
-    //    if (flag_first_time)
-    //    {
-    //        s = 1 ;
-    //        pre_index = class_index;
-    //        single_voxel.object_ID = s ;
-    //        flag_first_time = false;
+    if (flag_first_time)
+    {
+        s = 1 ;
+        pre_index = class_index;
+        single_voxel.object_ID = s ;
+        flag_first_time = false;
 
-    //    }
-    //    else
-    //    {
-    //        if (class_index == pre_index)
-    //            single_voxel.object_ID = s ;
-    //        else
-    //            single_voxel.object_ID = s++ ;
-    //    }
-    //    pre_index = class_index ;
+    }
+    else
+    {
+        if (class_index == pre_index)
+            single_voxel.object_ID = s ;
+        else
+            single_voxel.object_ID = s++ ;
+    }
+    pre_index = class_index ;
 }
 
 int OctomapWorld::identifyClass(octomap::point3d point_senmantic_clolor) {

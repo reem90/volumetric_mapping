@@ -10,7 +10,7 @@
   <author email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</author>
   <author email="markus.achtelik_devel@mavt.ethz.ch">Markus Achtelik</author>
 
-  <maintainer email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</maintainer>
+  <maintainer email="reem.ashour@ku.ac.ae"> Reem Ashour</maintainer>
 
   <license>BSD</license>
 
@@ -25,4 +25,34 @@
   <depend>pcl_ros</depend>
   <depend>volumetric_map_base</depend>
   <depend>volumetric_msgs</depend>
+
+
+
+<!--build_depend>minkindr_conversions</build_depend>
+<build_depend>octomap</build_depend>
+<build_depend>octomap_msgs</build_depend>
+<build_depend>octomap_ros</build_depend>
+<build_depend>pcl_conversions</build_depend>
+<build_depend>pcl_ros</build_depend>
+<build_depend>volumetric_map_base</build_depend>
+<build_depend>volumetric_msgs</build_depend>
+
+<build_export_depend>minkindr_conversions</build_export_depend>
+<build_export_depend>octomap</build_export_depend>
+<build_export_depend>octomap_msgs</build_export_depend>
+<build_export_depend>octomap_ros</build_export_depend>
+<build_export_depend>pcl_conversions</build_export_depend>
+<build_export_depend>pcl_ros</build_export_depend>
+<build_export_depend>volumetric_map_base</build_export_depend>
+<build_export_depend>volumetric_msgs</build_export_depend>
+
+<exec_depend>minkindr_conversions</exec_depend>
+<exec_depend>octomap</exec_depend>
+<exec_depend>octomap_msgs</exec_depend>
+<exec_depend>octomap_ros</exec_depend>
+<exec_depend>pcl_conversions</exec_depend>
+<exec_depend>pcl_ros</exec_depend>
+<exec_depend>volumetric_map_base</exec_depend>
+<exec_depend>volumetric_msgs</exec_depend-->
+
 </package>

@@ -9,7 +9,7 @@ modification, are permitted provided that the following conditions are met:
 * Redistributions of source code must retain the above copyright
 notice, this list of conditions and the following disclaimer.
 * Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
+notice, this list of conditions and the following disclaimer in themage
 documentation and/or other materials provided with the distribution.
 * Neither the name of ETHZ-ASL nor the
 names of its contributors may be used to endorse or promote products
@@ -26,6 +26,13 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
+/*
+* Modified by Reem Ashour, Khalifa University, UAE.
+* The provided code is an implementation of labeling objects in octomap 
+* for semantic-aware exploration algorithm.
+*/
+
 
 #ifndef VOLUMETRIC_MAP_BASE_WORLD_BASE_H_
 #define VOLUMETRIC_MAP_BASE_WORLD_BASE_H_
@@ -93,6 +100,13 @@ class WorldBase {
   void insertPointcloud(
       const Transformation& T_G_sensor,
       const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud_sensor);
+
+ // ADDED BY R 
+   void insertPointcloud2(
+        const Transformation& T_G_sensor,
+	const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& pointcloud_sensor);
+		
+
 
   // Manually affect the state of a bounding box. For the WorldBase class,
   // setting to occupied is a no-op.
@@ -211,6 +225,15 @@ class WorldBase {
       const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud_sensor) {
     LOG(ERROR) << "Calling unimplemented pointcloud insertion!";
   }
+
+
+// ADDED BY R 
+   virtual void insertPointcloudColorIntoMapImpl(
+	const Transformation& T_G_sensor,
+        const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& pointcloud_sensor) {
+	LOG(ERROR) << "Calling unimplemented pointcloud insertion!";
+	  }
+
   virtual void insertPointcloudIntoMapWithWeightsImpl(
       const Transformation& sensor_to_world,
       const pcl::PointCloud<pcl::PointXYZ>::Ptr& pointcloud,

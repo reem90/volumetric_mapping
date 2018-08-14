@@ -27,6 +27,13 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/*
+* Modified by Reem Ashour, Khalifa University, UAE.
+* The provided code is an implementation of labeling objects in octomap 
+* for semantic-aware exploration algorithm.
+*/
+
+
 #ifndef OCTOMAP_WORLD_OCTOMAP_MANAGER_H_
 #define OCTOMAP_WORLD_OCTOMAP_MANAGER_H_
 
@@ -64,6 +71,9 @@ class OctomapManager : public OctomapWorld {
   void insertDisparityImageWithTf(
       const stereo_msgs::DisparityImageConstPtr& disparity);
   void insertPointcloudWithTf(
+      const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+
+  void insertColoredPointcloudWithTf(
       const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
 
   // Input Octomap callback.
@@ -126,6 +136,9 @@ class OctomapManager : public OctomapWorld {
 
   tf::TransformListener tf_listener_;
 
+  // ADDED FOR LATER USE  (AS Sel) 
+  double tf_update_frequency_;
+  ros::Duration tf_update_latency;
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;

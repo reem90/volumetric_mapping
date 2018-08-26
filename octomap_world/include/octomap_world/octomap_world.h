@@ -144,6 +144,8 @@ public:
     // Creates an octomap with the correct parameters.
     OctomapWorld(const OctomapParameters& params);
     std_msgs::ColorRGBA getEncodedColor(octomap::LabelOcTree::iterator it);
+    std_msgs::ColorRGBA getEncodedColorClass(octomap::LabelOcTree::iterator it);
+
 ////    // Deep copy of OctomapWorld rhs
 ////    OctomapWorld(const OctomapWorld& rhs);
 
@@ -159,36 +161,40 @@ public:
 
     // Virtual functions for manually manipulating map probabilities.
     // two types because of the two variables type  Eigen::Vector3d OR  std::vector<Eigen::Vector3d>
+//    virtual void setFree(
+//            const Eigen::Vector3d& position,
+//            const Eigen::Vector3d& bounding_box_size,
+//            const BoundHandling& insertion_method = BoundHandling::kDefault);
+//    virtual void setFree(
+//            const std::vector<Eigen::Vector3d>& positions,
+//            const Eigen::Vector3d& bounding_box_size,
+//            const BoundHandling& insertion_method = BoundHandling::kDefault);
     virtual void setFree(
             const Eigen::Vector3d& position,
             const Eigen::Vector3d& bounding_box_size,
-            const BoundHandling& insertion_method = BoundHandling::kDefault);
-    virtual void setFree(
-            const std::vector<Eigen::Vector3d>& positions,
-            const Eigen::Vector3d& bounding_box_size,
-            const BoundHandling& insertion_method = BoundHandling::kDefault);
-
-    virtual void setOccupied(
-            const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
-            const BoundHandling& insertion_method = BoundHandling::kDefault);
-    virtual void setOccupied(
-            const std::vector<Eigen::Vector3d>& positions,
-            const Eigen::Vector3d& bounding_box_size,
-            const BoundHandling& insertion_method = BoundHandling::kDefault);
-
-    //  virtual void setOccupied(const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size);
+            const Eigen::Vector3d& bounding_box_offset =Eigen::Vector3d(0.0,0.0,0.0));
+//    virtual void setOccupied(
+//            const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+//            const BoundHandling& insertion_method = BoundHandling::kDefault);
+//    virtual void setOccupied(
+//            const std::vector<Eigen::Vector3d>& positions,
+//            const Eigen::Vector3d& bounding_box_size,
+//            const BoundHandling& insertion_method = BoundHandling::kDefault);
+    virtual void setOccupied(const Eigen::Vector3d& position,const Eigen::Vector3d& bounding_box_size);
 
     // deleted from s
-    virtual void setBordersOccupied(const Eigen::Vector3d& cropping_size);
+    //virtual void setBordersOccupied(const Eigen::Vector3d& cropping_size);
 
 
     // Virtual functions for outputting map status. If treat_unknown_as_occupied
     // is set to true, those functions return kOccupied instead of kUnknown.
     void enableTreatUnknownAsOccupied();
     void disableTreatUnknownAsOccupied();
+
     virtual CellStatus getCellStatusBoundingBox(
             const Eigen::Vector3d& point,
             const Eigen::Vector3d& bounding_box_size) const;
+
     virtual CellStatus getCellStatusPoint(const Eigen::Vector3d& point) const;
     //virtual CellStatus getCellTrueStatusPoint(const Eigen::Vector3d& point) const;
     virtual CellStatus getCellProbabilityPoint(const Eigen::Vector3d& point,
@@ -206,15 +212,17 @@ public:
     virtual CellStatus getVisibility(const Eigen::Vector3d& view_point,
                                      const Eigen::Vector3d& voxel_to_test,
                                      bool stop_at_unknown_cell) const;
+
     virtual CellStatus getLineStatusBoundingBox(
             const Eigen::Vector3d& start, const Eigen::Vector3d& end,
             const Eigen::Vector3d& bounding_box_size) const;
+
     virtual void getOccupiedPointCloud(
             pcl::PointCloud<pcl::PointXYZ>* output_cloud) const;
+
     virtual void getOccupiedPointcloudInBoundingBox(
             const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
-            pcl::PointCloud<pcl::PointXYZ>* output_cloud,
-            const BoundHandling& insertion_method = BoundHandling::kDefault) const;
+            pcl::PointCloud<pcl::PointXYZ>* output_cloud) const;
 
     // Structure: vector of pairs, key is the cube center and double is the
     // dimension of each side.
@@ -224,21 +232,21 @@ public:
                              occupied_box_vector) const;
    // void getBox(const octomap::OcTreeKey& key,
      //           std::pair<Eigen::Vector3d, double>* box) const;
-    void getFreeBoxesBoundingBox(
-            const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
-            std::vector<std::pair<Eigen::Vector3d, double> >* free_box_vector) const;
-    void getOccupiedBoxesBoundingBox(
-            const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
-            std::vector<std::pair<Eigen::Vector3d, double> >* occupied_box_vector)
-    const;
+   // void getFreeBoxesBoundingBox(
+    //        const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+    //        std::vector<std::pair<Eigen::Vector3d, double> >* free_box_vector) const;
+    //void getOccupiedBoxesBoundingBox(
+     //       const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+     //       std::vector<std::pair<Eigen::Vector3d, double> >* occupied_box_vector)
+    //const;
 
     virtual double getResolution() const;
     virtual Eigen::Vector3d getMapCenter() const;
     virtual Eigen::Vector3d getMapSize() const;
     virtual void getMapBounds(Eigen::Vector3d* min_bound,
                               Eigen::Vector3d* max_bound) const;
-    bool getNearestFreePoint(const Eigen::Vector3d& position,
-                             Eigen::Vector3d* free_position) const;
+    //bool getNearestFreePoint(const Eigen::Vector3d& position,
+     //                        Eigen::Vector3d* free_position) const;
 
     // Collision checking with robot model. Implemented as a box with our own
     // implementation.
@@ -262,16 +270,18 @@ public:
     bool writeOctomapToFile(const std::string& filename);
 
     // Writing binary octomap to stream
-    bool writeOctomapToBinaryConst(std::ostream& s) const;
+    //bool writeOctomapToBinaryConst(std::ostream& s) const;
 
     // Helpers for publishing.
     void generateMarkerArray(const std::string& tf_frame,
                              visualization_msgs::MarkerArray* occupied_nodes,
                              visualization_msgs::MarkerArray* free_nodes);
-
+    void generateMarkerArrayClass(const std::string& tf_frame,
+                             visualization_msgs::MarkerArray* occupied_nodes,
+                             visualization_msgs::MarkerArray* free_nodes);
     // ADDED BY R
     // void updateCertaintyValue(octomap::LabelOcTreeNode * n, uint8_t val);
-    //void updateVoxelsInterest(octomap::LabelOcTreeNode * n) ;
+    void updateVoxelsInterest(octomap::LabelOcTreeNode * n) ;
     int identifyClass(octomap::point3d point_senmantic_clolor) ;
     double introduceNoise(int class_type, int &class_index) ;
     void updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class_index , double certainty_val ) ;
@@ -281,12 +291,12 @@ public:
 
 
     // Convert all unknown space into free space.
-    void convertUnknownToFree();
+    //void convertUnknownToFree();
     // Convert unknown space between min_bound and max_bound into free space.
-    void convertUnknownToFree(const Eigen::Vector3d& min_bound,
-                              const Eigen::Vector3d& max_bound);
+    //void convertUnknownToFree(const Eigen::Vector3d& min_bound,
+    //                          const Eigen::Vector3d& max_bound);
     // Inflation of all obstacles by safety_space.
-    void inflateOccupied(const Eigen::Vector3d& safety_space);
+   // void inflateOccupied(const Eigen::Vector3d& safety_space);
 
     // Change detection -- when this is called, this resets the change detection
     // tracking within the map. So 2 consecutive calls will produce first the
@@ -297,12 +307,15 @@ public:
     // order for this to work!
     void getChangedPoints(std::vector<Eigen::Vector3d>* changed_points,
                           std::vector<bool>* changed_states);
+
+
     void enableChangeDetection() { octree_->enableChangeDetection(true); }
     void disableChangeDetection() { octree_->enableChangeDetection(false); }
 
     void coordToKey(const Eigen::Vector3d& coord, octomap::OcTreeKey* key) const;
     void keyToCoord(const octomap::OcTreeKey& key, Eigen::Vector3d* coord) const;
 
+    // heat map get
 protected:
     // Actual implementation for inserting disparity data.
     virtual void insertProjectedDisparityIntoMapImpl(
@@ -325,11 +338,16 @@ protected:
     void setLogOddsBoundingBox(
             const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
             double log_odds_value,
-            const BoundHandling& insertion_method = BoundHandling::kDefault);
-    void setLogOddsBoundingBox(
-            const std::vector<Eigen::Vector3d>& positions,
-            const Eigen::Vector3d& bounding_box_size, double log_odds_value,
-            const BoundHandling& insertion_method = BoundHandling::kDefault);
+            const Eigen::Vector3d& offset = Eigen::Vector3d(0.0,0.0,0.0));
+
+//    void setLogOddsBoundingBox(
+//            const Eigen::Vector3d& position, const Eigen::Vector3d& bounding_box_size,
+//            double log_odds_value,
+//            const BoundHandling& insertion_method = BoundHandling::kDefault);
+//    void setLogOddsBoundingBox(
+//            const std::vector<Eigen::Vector3d>& positions,
+//            const Eigen::Vector3d& bounding_box_size, double log_odds_value,
+//            const BoundHandling& insertion_method = BoundHandling::kDefault);
 
     void getAllBoxes(
             bool occupied_boxes,

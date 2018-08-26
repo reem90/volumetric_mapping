@@ -189,10 +189,10 @@ void WorldBase::insertPointcloud(
         const Transformation& T_G_sensor,
         const sensor_msgs::PointCloud2::ConstPtr& pointcloud_sensor) {
 
-    //  pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
-    //      new pcl::PointCloud<pcl::PointXYZ>);
-    //  pcl::fromROSMsg(*pointcloud_sensor, *pointcloud_sensor_pcl);
-    //  insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
+//      pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
+//          new pcl::PointCloud<pcl::PointXYZ>);
+//      pcl::fromROSMsg(*pointcloud_sensor, *pointcloud_sensor_pcl);
+//      insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
 
 
     // ADDED BY  R
@@ -267,6 +267,7 @@ void WorldBase::insertPointcloud2(
 
 
     insertPointcloudColorIntoMapImpl(T_G_sensor, pointcloud_sensor);
+
 }
 
 

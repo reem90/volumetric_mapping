@@ -54,13 +54,13 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       Q_initialized_(false),
       Q_(Eigen::Matrix4d::Identity()),
       full_image_size_(752, 480),
-      map_publish_frequency_(0.0) ,
+      map_publish_frequency_(1.0) ,
       tf_update_frequency_(5.0){ // R: ADDED THIS PARAM
     setParametersFromROS();
     subscribe();
     advertiseServices();
     advertisePublishers();
-    ROS_INFO( "Debug 1" );
+    //ROS_INFO( "Debug 1" );
 
     // After creating the manager, if the octomap_file parameter is set,
     // load the octomap at that path and publish it.
@@ -75,11 +75,11 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
             ROS_ERROR_STREAM("Could not load octomap from path: " << octomap_file);
         }
     }
-    ROS_INFO( "Debug 2" );
+    //ROS_INFO( "Debug 2" );
 }
 
 void OctomapManager::setParametersFromROS() {
-    ROS_INFO( "Debug 3" );
+    //ROS_INFO( "Debug 3" );
     LabelParameters label_params ;
     nh_private_.param("label/object_certainty_threshold", label_params.obj_certainty_threshold, label_params.obj_certainty_threshold);
     nh_private_.param("label/object_interest_value", label_params.interest_value, label_params.interest_value);
@@ -206,8 +206,7 @@ bool OctomapManager::setQFromParams(std::vector<double>* Q_vec) {
 }
 
 void OctomapManager::subscribe() {
-    ROS_INFO( "Debug 4" );
-
+    //ROS_INFO( "Debug 4" );
     left_info_sub_ = nh_.subscribe("cam0/camera_info", 1,
                                    &OctomapManager::leftCameraInfoCallback, this);
     right_info_sub_ = nh_.subscribe(
@@ -216,7 +215,6 @@ void OctomapManager::subscribe() {
                 "disparity", 40, &OctomapManager::insertDisparityImageWithTf, this);
     pointcloud_sub_ = nh_.subscribe(
                 "pointcloud", 40, &OctomapManager::insertPointcloudWithTf, this);
-    // ************************ Need either to add or chnage to Pointcloud colored ***************** //
     octomap_sub_ =
             nh_.subscribe("input_octomap", 1, &OctomapManager::octomapCallback, this);
 }
@@ -229,7 +227,7 @@ void OctomapManager::octomapCallback(const octomap_msgs::Octomap& msg) {
 }
 
 void OctomapManager::advertiseServices() {
-    ROS_INFO( "Debug 5" );
+    //ROS_INFO( "Debug 5" );
     reset_map_service_ = nh_private_.advertiseService(
                 "reset_map", &OctomapManager::resetMapCallback, this);
     publish_all_service_ = nh_private_.advertiseService(
@@ -255,6 +253,9 @@ void OctomapManager::advertisePublishers() {
 
     occupied_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
                 "octomap_occupied", 1, latch_topics_);
+
+    occupied_nodes_class_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
+                "octomap_occupied_class", 1, latch_topics_);
     free_nodes_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
                 "octomap_free", 1, latch_topics_);
 
@@ -269,20 +270,31 @@ void OctomapManager::advertisePublishers() {
                 "nearest_obstacle", 1, false);
 
     if (map_publish_frequency_ > 0.0) {
-        map_publish_timer_ =
-                nh_private_.createTimer(ros::Duration(1.0 / map_publish_frequency_),
-                                        &OctomapManager::publishAllEvent, this);
+        // ROS_INFO ("Calling the publish all event function ");
+        nh_private_.createTimer(ros::Duration(1.0 / map_publish_frequency_),
+                                &OctomapManager::publishAllEvent, this);
     }
 }
 
 void OctomapManager::publishAll() {
-    ROS_INFO("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$publishAll") ;
+    //ROS_INFO("publishAll") ;
+
     if (latch_topics_ || occupied_nodes_pub_.getNumSubscribers() > 0 ||
             free_nodes_pub_.getNumSubscribers() > 0) {
         ROS_INFO("publishAll TRUE") ;
-        visualization_msgs::MarkerArray occupied_nodes, free_nodes;
+        visualization_msgs::MarkerArray occupied_nodes, free_nodes ;
         generateMarkerArray(world_frame_, &occupied_nodes, &free_nodes);
         occupied_nodes_pub_.publish(occupied_nodes);
+        free_nodes_pub_.publish(free_nodes);
+    }
+
+
+    if (latch_topics_ || occupied_nodes_class_pub_.getNumSubscribers() > 0 ||
+            free_nodes_pub_.getNumSubscribers() > 0) {
+        ROS_INFO("publishAll TRUE") ;
+        visualization_msgs::MarkerArray occupied_nodes, free_nodes ;
+        generateMarkerArrayClass(world_frame_, &occupied_nodes, &free_nodes);
+        occupied_nodes_class_pub_.publish(occupied_nodes);
         free_nodes_pub_.publish(free_nodes);
     }
 
@@ -486,12 +498,20 @@ void OctomapManager::insertPointcloudWithTf(
 
         const sensor_msgs::PointCloud2::ConstPtr& pointcloud) {
     // Look up transform from sensor frame to world frame.
-          //  ROS_INFO("pointcloud subsriber");
+    //  ROS_INFO("pointcloud subsriber");
     Transformation sensor_to_world;
     if (lookupTransform(pointcloud->header.frame_id, world_frame_,
                         pointcloud->header.stamp, &sensor_to_world)) {
         insertPointcloud(sensor_to_world, pointcloud);
     }
+
+
+    visualization_msgs::MarkerArray occupied_nodes, free_nodes , occupied_nodes_class;
+    generateMarkerArray(world_frame_, &occupied_nodes, &free_nodes);
+    generateMarkerArrayClass(world_frame_, &occupied_nodes_class, &free_nodes);
+    occupied_nodes_pub_.publish(occupied_nodes);
+    occupied_nodes_class_pub_.publish(occupied_nodes_class);
+    free_nodes_pub_.publish(free_nodes);
 }
 
 bool OctomapManager::lookupTransform(const std::string& from_frame,

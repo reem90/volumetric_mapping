@@ -40,6 +40,15 @@ int main(int argc, char** argv) {
 
   volumetric_mapping::OctomapManager manager(nh, nh_private);
 
-  ros::spin();
+  //ros::spin();
+
+  ros::Rate loop_rate(10);
+
+  while (ros::ok())
+  {
+      ros::spinOnce();
+      loop_rate.sleep();
+  }
+
   return 0;
 }

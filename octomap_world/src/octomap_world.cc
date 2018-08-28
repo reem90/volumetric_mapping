@@ -157,6 +157,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     updateOccupancy(&free_cells, &occupied_cells);
     ///////////////////////////////////////////////////////////
 
+
     for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud->begin();
          it != cloud->end(); ++it) {
 
@@ -430,6 +431,24 @@ OctomapWorld::CellStatus OctomapWorld::getCellProbabilityPoint(
             *probability = node->getOccupancy();
         }
         if (octree_->isNodeOccupied(node)) {
+            return CellStatus::kOccupied;
+        } else {
+            return CellStatus::kFree;
+        }
+    }
+}
+
+OctomapWorld::CellStatus OctomapWorld::getCellIntrestGainPoint(
+        const Eigen::Vector3d& point, double* gain) const {
+    octomap::LabelOcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
+    *gain = 0 ;
+    if (node == NULL) {
+        return CellStatus::kUnknown;
+    } else {
+        if (octree_->isNodeOccupied(node)) {
+            octomap::LabelOcTreeNode::Label& label = node->getLabel();
+            if(label.type == octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED)
+                *gain = label.interest_value ;
             return CellStatus::kOccupied;
         } else {
             return CellStatus::kFree;

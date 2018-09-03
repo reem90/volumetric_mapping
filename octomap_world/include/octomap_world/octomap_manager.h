@@ -174,8 +174,6 @@ class OctomapManager : public OctomapWorld {
 
   // Publish markers for visualization.
   ros::Publisher occupied_nodes_pub_;
-  ros::Publisher occupied_nodes_class_pub_;
-
   ros::Publisher free_nodes_pub_;
 
   // Services!

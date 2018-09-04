@@ -179,12 +179,12 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
         int t =  octree_->castRay(p_G_sensor, direction, obstacle,false,0);
         if(t)
         {
-            ROS_INFO("Debug") ;
+            //ROS_INFO("Debug") ;
             octomap::LabelOcTreeNode* node = octree_->search(p_G_point);
 
             if (octree_->isNodeOccupied(node))
             {
-                ROS_INFO("******Debug2******") ;
+             //   ROS_INFO("******Debug2******") ;
                 updateSingleVoxelInfo(node, class_index , certainty_val ) ;
             }
         }
@@ -282,7 +282,7 @@ int OctomapWorld::castRay(const octomap::point3d& sensor_origin,
                           octomap::KeySet* free_cells,
                           octomap::KeySet* occupied_cells) const {
 
-    ROS_INFO("CAST                   RAY ") ;
+    //ROS_INFO("CAST                   RAY ") ;
     CHECK_NOTNULL(free_cells);
     CHECK_NOTNULL(occupied_cells);
     int res = 0;
@@ -1676,20 +1676,27 @@ void OctomapWorld::updateIntrestValue()
              end = octree_->end_leafs(); it != end; ++it) {  
            
             if (octree_->isNodeOccupied(*it))
-            {
+            {     
             octomap::LabelOcTreeNode& node = *it;
             octomap::LabelOcTreeNode::Label& label = node.getLabel();
             if (label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_FLOOR || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_TABLE || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_WALL || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_NOT_LABELED) 
-                label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_NOT_INTEREST ; 
+               {
+                label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_NOT_INTEREST ;
+                label.num_of_vis += 1;
+            }
             else 
             {
-                if (label.num_of_vis > 100 )
+                label.num_of_vis += 1;
+
+                if (label.num_of_vis > 10)
                     label.type = octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_VISITED ;
                 else 
                     label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED ;
 
                
             }
+
+
         }
         }
    
@@ -1697,7 +1704,7 @@ void OctomapWorld::updateIntrestValue()
 
 void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class_index , double certainty_val )
 {
-    ROS_INFO("UPDATE Voxels Info");
+    //ROS_INFO("UPDATE Voxels Info");
     //std::cout << "INDEX " << class_index << " Cer" << certainty_val << std::endl << std::flush ;
     //we can fill the color as well
     //octomap::LabelOcTreeNode::Label single_voxel =node->getLabel() ;
@@ -1711,7 +1718,7 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
         single_voxel.r = 0;
         single_voxel.g = 0 ; 
         single_voxel.b = 1 ; 
-        single_voxel.num_of_vis += 1 ;  
+        //single_voxel.num_of_vis += 1 ;
     }
     else if (class_index == 1)
     {
@@ -1719,7 +1726,7 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
         single_voxel.r = 0;
         single_voxel.g = 1 ; 
         single_voxel.b = 1 ; 
-        single_voxel.num_of_vis += 1 ;  
+       // single_voxel.num_of_vis += 1 ;
     }
     else if (class_index == 2)
     {
@@ -1727,7 +1734,7 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
         single_voxel.r = 0.666666667;
         single_voxel.g = 0.470588235; 
         single_voxel.b = 0.784313725 ; 
-        single_voxel.num_of_vis += 1 ;  
+       // single_voxel.num_of_vis += 1 ;
     }
     else if (class_index == 3)
     {
@@ -1735,7 +1742,7 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
         single_voxel.r = 1;
         single_voxel.g = 0 ; 
         single_voxel.b = 0 ; 
-        single_voxel.num_of_vis += 1 ;  
+       // single_voxel.num_of_vis += 1 ;
     }
     else
     {
@@ -1743,7 +1750,7 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
         single_voxel.r = 0.196078431;
         single_voxel.g = 0.196078431 ; 
         single_voxel.b = 0.196078431 ; 
-        single_voxel.num_of_vis += 1 ;  
+      //  single_voxel.num_of_vis += 1 ;
     }
 }
 
@@ -1809,6 +1816,28 @@ OctomapWorld::CellStatus OctomapWorld::getCellIneterestGainPoint(
         }
     }
 }
+
+
+double OctomapWorld::getCellIneterestGain(
+        const Eigen::Vector3d& point) const {
+    octomap::LabelOcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
+    if (node == NULL) {
+        return 0.5;
+    }
+    else {
+        if (octree_->isNodeOccupied(node)) {
+            octomap::LabelOcTreeNode::Label& label = node->getLabel() ;
+            if(label.type == octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED)
+                return 0.5  ;
+            else
+                return 0.8;
+        }
+        else {
+            return 0.2;
+        }
+    }
+}
+
 
 }  // namespace volumetric_mapping
 

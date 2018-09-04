@@ -195,6 +195,8 @@ public:
                                                double* probability) const;
 
     virtual CellStatus getCellIneterestGainPoint(const Eigen::Vector3d& point, double* gain) const ;
+
+    virtual double getCellIneterestGain(const Eigen::Vector3d& point) const ;
 //    // ADDED BY R: returns the certainty value if the voxels in occupied, else return zero
 //    virtual CellStatus getCertaintyValue(const Eigen::Vector3d& point, double &gain_vale) const ;
 //    // ADDED By R: checks certainty value with the threshold and update the voxels type

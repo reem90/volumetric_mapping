@@ -39,7 +39,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <octomap/LabelOcTree.h>
 
+#define SQ(x) ((x)*(x))
+#define SQRT2 0.70711
+
 namespace volumetric_mapping {
+
+
+
+
+
 
 bool flag_first_time = true ;
 int s ;
@@ -165,34 +173,52 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
          it != cloud->end(); ++it) {
 
         const octomap::point3d p_G_point(it->x, it->y, it->z);
+
+
+
         const octomap::point3d p_G_color((int)it->r,(int)it->g,(int)it->b) ;
-        octomap::point3d direction = octomap::point3d(0,0,0) ; 
-        octomap::point3d obstacle ; 
-        direction.x() = p_G_point.x() - p_G_sensor.x() ; 
-        direction.y() = p_G_point.y() - p_G_sensor.y() ; 
-        direction.z() = p_G_point.z() - p_G_sensor.z() ; 
+        octomap::point3d direction = octomap::point3d(0,0,0) ;
+        octomap::point3d obstacle ;
+        direction.x() = p_G_point.x() - p_G_sensor.x() ;
+        direction.y() = p_G_point.y() - p_G_sensor.y() ;
+        direction.z() = p_G_point.z() - p_G_sensor.z() ;
 
         int class_type_1 = identifyClass(p_G_color);
         int class_index  = -1  ;
         double certainty_val = introduceNoise(class_type_1,class_index) ;
-        
+
         int t =  octree_->castRay(p_G_sensor, direction, obstacle,false,0);
         if(t)
         {
             //ROS_INFO("Debug") ;
             octomap::LabelOcTreeNode* node = octree_->search(p_G_point);
-
             if (octree_->isNodeOccupied(node))
             {
-             //   ROS_INFO("******Debug2******") ;
+                //   ROS_INFO("******Debug2******") ;
                 updateSingleVoxelInfo(node, class_index , certainty_val ) ;
             }
         }
-        else
-            ROS_INFO("cast ray return false");
+//        else
+//            ROS_INFO("cast ray return false");
     }
 
-//UpdateID() ;
+
+
+    geometry_msgs::Pose p ;
+    p.position.x =  p_G_sensor.x();
+    p.position.y =  p_G_sensor.y();
+    p.position.z =  p_G_sensor.z();
+    p.orientation.x = T_G_sensor.getRotation().x();
+    p.orientation.y = T_G_sensor.getRotation().y();
+    p.orientation.z = T_G_sensor.getRotation().z();
+    p.orientation.w = T_G_sensor.getRotation().w();
+
+
+    UpdateNumberofVisits(p);
+
+
+
+    //UpdateID() ;
     updateIntrestValue() ;
     updateOccupancy(&free_cells, &occupied_cells);
 
@@ -1057,7 +1083,7 @@ std_msgs::ColorRGBA OctomapWorld::getEncodedColor(octomap::LabelOcTree::iterator
 
     std_msgs::ColorRGBA color;
     color.a = 1;
-/*  if (label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_FLOOR)
+    /*  if (label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_FLOOR)
     {
         color.r = label.r;
         color.g = label.g;
@@ -1089,7 +1115,7 @@ std_msgs::ColorRGBA OctomapWorld::getEncodedColor(octomap::LabelOcTree::iterator
     }
 */
 
-  
+
     if (label.type == octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED)
     {
         color.r = 1;
@@ -1672,35 +1698,127 @@ void OctomapWorld::UpdateID()
 void OctomapWorld::updateIntrestValue()
 {
 
-        for (octomap::LabelOcTree::leaf_iterator it = octree_->begin_leafs(),
-             end = octree_->end_leafs(); it != end; ++it) {  
-           
-            if (octree_->isNodeOccupied(*it))
-            {     
+    for (octomap::LabelOcTree::leaf_iterator it = octree_->begin_leafs(),
+         end = octree_->end_leafs(); it != end; ++it) {
+
+        if (octree_->isNodeOccupied(*it))
+        {
             octomap::LabelOcTreeNode& node = *it;
             octomap::LabelOcTreeNode::Label& label = node.getLabel();
-            if (label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_FLOOR || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_TABLE || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_WALL || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_NOT_LABELED) 
-               {
-                label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_NOT_INTEREST ;
-                label.num_of_vis += 1;
-            }
-            else 
+            if (label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_FLOOR || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_TABLE || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_WALL || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_NOT_LABELED)
             {
-                label.num_of_vis += 1;
+                label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_NOT_INTEREST ;
+                //label.num_of_vis += 1;
+            }
+            else
+            {
+                //label.num_of_vis += 1;
 
-                if (label.num_of_vis > 10)
+                if (label.num_of_vis > 2)
                     label.type = octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_VISITED ;
-                else 
+                else
                     label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED ;
 
-               
+
             }
-
-
         }
-        }
-   
+    }
 }
+
+
+double OctomapWorld::UpdateNumberofVisits(geometry_msgs::Pose p){
+    ROS_INFO("UpdateNumberofVisits");
+    std::vector<std::vector<Eigen::Vector3d> > cam_bound_normals;
+    double pitch = M_PI * 15 / 180.0; // conert to R
+    ROS_INFO("pitch %f",pitch);
+
+    double camTop = (pitch - M_PI * 45/ 360.0) + M_PI / 2.0;
+    ROS_INFO("camTop %f",camTop);
+
+    double camBottom = (pitch + M_PI * 45 / 360.0) - M_PI / 2.0;
+    ROS_INFO("camBottom %f",camBottom);
+
+    double side = M_PI * (58) / 360.0 - M_PI / 2.0;
+    ROS_INFO("side %f",side);
+
+    Eigen::Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
+    Eigen::Vector3d top(cos(camTop), 0.0, -sin(camTop));
+    Eigen::Vector3d right(cos(side), sin(side), 0.0);
+    Eigen::Vector3d left(cos(side), -sin(side), 0.0);
+    Eigen::AngleAxisd m = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
+    Eigen::Vector3d rightR = m * right;
+    Eigen::Vector3d leftR = m * left;
+    rightR.normalize();
+    leftR.normalize();
+    std::vector<Eigen::Vector3d> cam_bound_normals_a;
+    cam_bound_normals_a.push_back(Eigen::Vector3d(bottom.x(), bottom.y(), bottom.z()));
+    cam_bound_normals_a.push_back(Eigen::Vector3d(top.x(), top.y(), top.z()));
+    cam_bound_normals_a.push_back(Eigen::Vector3d(rightR.x(), rightR.y(), rightR.z()));
+    cam_bound_normals_a.push_back(Eigen::Vector3d(leftR.x(), leftR.y(), leftR.z()));
+    cam_bound_normals.push_back(cam_bound_normals_a);
+    ROS_INFO("cam_bound_normals size %f",cam_bound_normals.size());
+
+
+    Eigen::Vector3d origin(p.position.x, p.position.y, p.position.z);
+    tf::Quaternion or_orientation(p.orientation.x,p.orientation.y, p.orientation.z, p.orientation.w);
+    tf::Matrix3x3 m2(or_orientation);
+    double yaw_p , roll_p, pitch_p;
+    m2.getRPY(roll_p, pitch_p, yaw_p);
+    const double disc = 0.15;
+    int range = 3;
+    Eigen::Vector3d vec;
+
+    double rangeSq = pow(range, 2.0);
+
+    for (octomap::LabelOcTree::leaf_iterator it = octree_->begin_leafs(),
+         end = octree_->end_leafs(); it != end; ++it) {
+
+        vec[0] = it.getX(); vec[1] =it.getY() ; vec[2] = it.getZ() ;
+        Eigen::Vector3d dir = vec - origin;
+
+        if (dir.transpose().dot(dir) > rangeSq) {
+            continue;
+        }
+
+        bool insideAFieldOfView = false;
+        // Check that voxel center is inside one of the fields of view.
+        for (typename std::vector<std::vector<Eigen::Vector3d>>::iterator itCBN = cam_bound_normals.begin();
+             itCBN != cam_bound_normals.end(); itCBN++) {
+
+            bool inThisFieldOfView = true;
+
+            for (typename std::vector<Eigen::Vector3d>::iterator itSingleCBN = itCBN->begin();
+                 itSingleCBN != itCBN->end(); itSingleCBN++) {
+
+                Eigen::Vector3d normal = Eigen::AngleAxisd(yaw_p, Eigen::Vector3d::UnitZ())
+                        * (*itSingleCBN);
+
+                double val = dir.dot(normal.normalized());
+                if (val < SQRT2 * disc) {
+                    inThisFieldOfView = false;
+                    break;
+                }
+            }
+            if (inThisFieldOfView) {
+                insideAFieldOfView = true;
+                break;
+            }
+        }
+
+        if (!insideAFieldOfView) {
+
+            continue;
+        }
+        ROS_INFO("FOUND ******************************************************************");
+
+        // only update the ones on the FOV
+        octomap::LabelOcTreeNode& node = *it;
+        octomap::LabelOcTreeNode::Label& label = node.getLabel();
+        label.num_of_vis +=1 ;
+    }
+    return 0;
+}
+
 
 void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class_index , double certainty_val )
 {
@@ -1716,42 +1834,44 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
     {
         single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_FLOOR;
         single_voxel.r = 0;
-        single_voxel.g = 0 ; 
-        single_voxel.b = 1 ; 
+        single_voxel.g = 0 ;
+        single_voxel.b = 1 ;
         //single_voxel.num_of_vis += 1 ;
     }
     else if (class_index == 1)
     {
         single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_WALL;
         single_voxel.r = 0;
-        single_voxel.g = 1 ; 
-        single_voxel.b = 1 ; 
-       // single_voxel.num_of_vis += 1 ;
+        single_voxel.g = 1 ;
+        single_voxel.b = 1 ;
+        // single_voxel.num_of_vis += 1 ;
     }
     else if (class_index == 2)
     {
         single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_TABLE;
         single_voxel.r = 0.666666667;
-        single_voxel.g = 0.470588235; 
-        single_voxel.b = 0.784313725 ; 
-       // single_voxel.num_of_vis += 1 ;
+        single_voxel.g = 0.470588235;
+        single_voxel.b = 0.784313725 ;
+        // single_voxel.num_of_vis += 1 ;
     }
     else if (class_index == 3)
     {
         single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_CHAIR;
         single_voxel.r = 1;
-        single_voxel.g = 0 ; 
-        single_voxel.b = 0 ; 
-       // single_voxel.num_of_vis += 1 ;
+        single_voxel.g = 0 ;
+        single_voxel.b = 0 ;
+        // single_voxel.num_of_vis += 1 ;
     }
     else
     {
         single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_NOT_LABELED;
         single_voxel.r = 0.196078431;
-        single_voxel.g = 0.196078431 ; 
-        single_voxel.b = 0.196078431 ; 
-      //  single_voxel.num_of_vis += 1 ;
+        single_voxel.g = 0.196078431 ;
+        single_voxel.b = 0.196078431 ;
+        //  single_voxel.num_of_vis += 1 ;
     }
+
+
 }
 
 int OctomapWorld::identifyClass(octomap::point3d point_senmantic_clolor) {
@@ -1773,7 +1893,7 @@ int OctomapWorld::identifyClass(octomap::point3d point_senmantic_clolor) {
     }
     else if (point_senmantic_clolor(0) == 170 && (point_senmantic_clolor(1) >= 119 && point_senmantic_clolor(1) <= 120) &&  point_senmantic_clolor(2) == 200)
     {
-        std::cout << "table" << std::endl << std::flush;
+       // std::cout << "table" << std::endl << std::flush;
         class_type =2 ;
     }
     else if (point_senmantic_clolor(0) == 255 && point_senmantic_clolor(1) == 0 && point_senmantic_clolor(2) == 0)
@@ -1793,23 +1913,23 @@ double OctomapWorld::introduceNoise(int class_type_1 , int &class_index) {
     //ROS_INFO("INRODUCE NOISE");
     std::vector<double> certinity_vec ={0,0,0,0,0} ;
     certinity_vec[class_type_1] =1 ;
-    // for debugging 
-    class_index = class_type_1 ; 
-    double class_certainty = 1 ; 
+    // for debugging
+    class_index = class_type_1 ;
+    double class_certainty = 1 ;
     return class_certainty ;
 }
 
 OctomapWorld::CellStatus OctomapWorld::getCellIneterestGainPoint(
         const Eigen::Vector3d& point, double* gain) const {
-    *gain = 0.0 ; 
+    *gain = 0.0 ;
     octomap::LabelOcTreeNode* node = octree_->search(point.x(), point.y(), point.z());
     if (node == NULL) {
         return CellStatus::kUnknown;
     } else {
         if (octree_->isNodeOccupied(node)) {
-            octomap::LabelOcTreeNode::Label& label = node->getLabel() ; 
+            octomap::LabelOcTreeNode::Label& label = node->getLabel() ;
             if(label.type == octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED)
-                *gain = 0.5 ; 
+                *gain = 0.5 ;
             return CellStatus::kOccupied;
         } else {
             return CellStatus::kFree;

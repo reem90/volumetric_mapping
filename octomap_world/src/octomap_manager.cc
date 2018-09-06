@@ -276,7 +276,7 @@ void OctomapManager::advertisePublishers() {
 }
 
 void OctomapManager::publishAll() {
-    ROS_INFO("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$publishAll") ;
+    ROS_INFO("publishAll") ;
     if (latch_topics_ || occupied_nodes_pub_.getNumSubscribers() > 0 ||
             free_nodes_pub_.getNumSubscribers() > 0) {
         ROS_INFO("publishAll TRUE") ;

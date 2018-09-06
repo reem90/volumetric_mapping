@@ -279,6 +279,7 @@ public:
     void updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class_index , double certainty_val ) ;
     void UpdateID() ;
     void updateIntrestValue() ;
+    double UpdateNumberofVisits(geometry_msgs::Pose p);
 
 
 

@@ -228,49 +228,6 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
 }
 
 
-//        const octomap::point3d p_G_color((int)it->r,(int)it->g,(int)it->b) ;
-//        // ROS_INFO("point %f %f %f " , p_G_color(0) , p_G_color(1) ,p_G_color(2));
-
-//        int class_type = identifyClass(p_G_color);
-//        //ROS_INFO("class color %f " , class_type );
-
-//        int class_index  = -1  ;
-//        double certainty_val = introduceNoise(class_type,class_index) ;
-//        //ROS_INFO("certainty value %f , class index , %d " ,certainty_val , class_index  );
-
-//        //octomap::point3d obstacle(0,0,0);
-//        // HOW ????
-//        //if (octree_->castRay(p_G_sensor, p_G_point, obstacle, false, 1)) // stop when meet uknown cell or reach a limit
-
-
-//        // First, check if we've already checked this.
-//        octomap::OcTreeKey key = octree_->coordToKey(p_G_point);
-//        if (occupied_cells.find(key) == occupied_cells.end()) {
-//            // Check if this is within the allowed sensor range.
-//            int t =  castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
-//            if(t)
-//            {
-//                octomap::LabelOcTreeNode* node = octree_->search(p_G_point);
-//                octomap::LabelOcTreeNode::Label single_voxel =node->getLabel() ;
-
-//                std::cout << single_voxel.object_ID ;
-//                //  if (octree_->isNodeOccupied(node))
-//                //  {
-//                //updateSingleVoxelInfo(node, class_index , certainty_val ) ;
-//                //  }
-//            }
-//            else
-//                ROS_INFO("cast ray return false");
-//        }
-
-//    }
-
-//UpdateID() ;
-//updateIntrestValue() ;
-// Apply the new free cells and occupied cells from
-//updateOccupancy(&free_cells, &occupied_cells);
-
-
 void OctomapWorld::insertProjectedDisparityIntoMapImpl(
         const Transformation& sensor_to_world, const cv::Mat& projected_points) {
     // Get the sensor origin in the world frame.
@@ -1716,13 +1673,10 @@ void OctomapWorld::updateIntrestValue()
             else
             {
                 //label.num_of_vis += 1;
-
                 if (label.num_of_vis > 10)
                     label.type = octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_VISITED ;
                 else
                     label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED ;
-
-
             }
         }
     }

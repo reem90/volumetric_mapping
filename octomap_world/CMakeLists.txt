@@ -9,8 +9,8 @@ set(OCTOMAP_LIBRARIES_DIRS "/home/kuri/catkin_ws/src/octomap/lib")
 set(OCTOMAP_INCLUDE_DIRS "/home/kuri/catkin_ws/src/octomap/octomap/include")
 # Set library names as absolute paths:
 set(OCTOMAP_LIBRARIES
-"/home/kuri/catkin_ws/src/octomap/lib/liboctomap.so"
-"/home/kuri/catkin_ws/src/octomap/lib/liboctomath.so"
+"/home/ku/catkin_ws/src/octomap/lib/liboctomap.so"
+"/home/ku/catkin_ws/src/octomap/lib/liboctomath.so"
 )
 
 

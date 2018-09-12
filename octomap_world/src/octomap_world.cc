@@ -143,6 +143,9 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
 
+    ROS_INFO("Sensor Point %f %f %f %f   %f   %f   %f ",T_G_sensor.getPosition().x(),T_G_sensor.getPosition().y(),T_G_sensor.getPosition().z(), T_G_sensor.getRotation().x() , T_G_sensor.getRotation().y() ,T_G_sensor.getRotation().z() ,T_G_sensor.getRotation().w() );
+
+    //std::cout << "Transformation Matrix" < T_G_sensor.getTransformationMatrix() << std::endl << std::flush ; 
     // First, rotate the pointcloud into the world frame.
     pcl::transformPointCloud(*cloud, *cloud,
                              T_G_sensor.getTransformationMatrix());
@@ -167,35 +170,39 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
 
     // Apply the new free cells and occupied cells from
     updateOccupancy(&free_cells, &occupied_cells);
-
-
+    
+    
     for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud->begin();
          it != cloud->end(); ++it) {
+        
 
         const octomap::point3d p_G_point(it->x, it->y, it->z);
 
-
-
         const octomap::point3d p_G_color((int)it->r,(int)it->g,(int)it->b) ;
+
         octomap::point3d direction = octomap::point3d(0,0,0) ;
-        octomap::point3d obstacle ;
+        octomap::point3d obstacle (0,0,0);
         direction.x() = p_G_point.x() - p_G_sensor.x() ;
         direction.y() = p_G_point.y() - p_G_sensor.y() ;
         direction.z() = p_G_point.z() - p_G_sensor.z() ;
 
         int class_type_1 = identifyClass(p_G_color);
+
         int class_index  = -1  ;
         double certainty_val = introduceNoise(class_type_1,class_index) ;
 
         int t =  octree_->castRay(p_G_sensor, direction, obstacle,false,0);
+
         if(t)
         {
-            //ROS_INFO("Debug") ;
-            octomap::LabelOcTreeNode* node = octree_->search(p_G_point);
+            octomap::LabelOcTreeNode* node = octree_->search(obstacle);
+            
             if (octree_->isNodeOccupied(node))
             {
-                //   ROS_INFO("******Debug2******") ;
+               // ROS_INFO("******Debug2******") ;
                 updateSingleVoxelInfo(node, class_index , certainty_val ) ;
+               // ROS_INFO("******update******") ;
+
             }
         }
 //        else
@@ -203,25 +210,21 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     }
 
 
-
     geometry_msgs::Pose p ;
-    p.position.x =  p_G_sensor.x();
-    p.position.y =  p_G_sensor.y();
-    p.position.z =  p_G_sensor.z();
+    p.position.x =  T_G_sensor.getPosition().x();
+    p.position.y =  T_G_sensor.getPosition().y();
+    p.position.z =  T_G_sensor.getPosition().z();
     p.orientation.x = T_G_sensor.getRotation().x();
     p.orientation.y = T_G_sensor.getRotation().y();
     p.orientation.z = T_G_sensor.getRotation().z();
     p.orientation.w = T_G_sensor.getRotation().w();
-
+    //ROS_INFO("******Number of Visits ****** %f   %f   %f   %f   %f   %f   %f", p.position.x,p.position.y , p.position.z, p.orientation.x , p.orientation.y , p.orientation.z , p.orientation.w ) ;
 
     UpdateNumberofVisits(p);
-
-
-
-    //UpdateID() ;
+    //ROS_INFO("v-----------------------------------------------");
     updateIntrestValue() ;
     updateOccupancy(&free_cells, &occupied_cells);
-
+    //ROS_INFO("enddd-----------------------------------------------");
 }
 
 
@@ -373,7 +376,7 @@ void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
                                    octomap::KeySet* occupied_cells) {
     CHECK_NOTNULL(free_cells);
     CHECK_NOTNULL(occupied_cells);
-
+    //ROS_ERROR("updateOccupancy"); 
     // Mark occupied cells.
     for (octomap::KeySet::iterator it = occupied_cells->begin(),
          end = occupied_cells->end();
@@ -1714,7 +1717,7 @@ void OctomapWorld::updateIntrestValue()
             {
                 //label.num_of_vis += 1;
 
-                if (label.num_of_vis > 2)
+                if (label.num_of_vis > 10)
                     label.type = octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_VISITED ;
                 else
                     label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED ;
@@ -1727,19 +1730,19 @@ void OctomapWorld::updateIntrestValue()
 
 
 double OctomapWorld::UpdateNumberofVisits(geometry_msgs::Pose p){
-    ROS_INFO("UpdateNumberofVisits");
+   // ROS_INFO("UpdateNumberofVisits");
     std::vector<std::vector<Eigen::Vector3d> > cam_bound_normals;
     double pitch = M_PI * 15 / 180.0; // conert to R
-    ROS_INFO("pitch %f",pitch);
+   // ROS_INFO("pitch %f",pitch);
 
     double camTop = (pitch - M_PI * 45/ 360.0) + M_PI / 2.0;
-    ROS_INFO("camTop %f",camTop);
+   // ROS_INFO("camTop %f",camTop);
 
     double camBottom = (pitch + M_PI * 45 / 360.0) - M_PI / 2.0;
-    ROS_INFO("camBottom %f",camBottom);
+   // ROS_INFO("camBottom %f",camBottom);
 
     double side = M_PI * (58) / 360.0 - M_PI / 2.0;
-    ROS_INFO("side %f",side);
+   // ROS_INFO("side %f",side);
 
     Eigen::Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
     Eigen::Vector3d top(cos(camTop), 0.0, -sin(camTop));
@@ -1756,7 +1759,7 @@ double OctomapWorld::UpdateNumberofVisits(geometry_msgs::Pose p){
     cam_bound_normals_a.push_back(Eigen::Vector3d(rightR.x(), rightR.y(), rightR.z()));
     cam_bound_normals_a.push_back(Eigen::Vector3d(leftR.x(), leftR.y(), leftR.z()));
     cam_bound_normals.push_back(cam_bound_normals_a);
-    ROS_INFO("cam_bound_normals size %f",cam_bound_normals.size());
+    //ROS_INFO("cam_bound_normals size %f",cam_bound_normals.size());
 
 
     Eigen::Vector3d origin(p.position.x, p.position.y, p.position.z);
@@ -1809,7 +1812,7 @@ double OctomapWorld::UpdateNumberofVisits(geometry_msgs::Pose p){
 
             continue;
         }
-        ROS_INFO("FOUND ******************************************************************");
+       //ROS_INFO("FOUND ******************************************************************");
 
         // only update the ones on the FOV
         octomap::LabelOcTreeNode& node = *it;

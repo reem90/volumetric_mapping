@@ -202,7 +202,10 @@ public:
 //    // ADDED By R: checks certainty value with the threshold and update the voxels type
 //    virtual CellStatus updateLabelInfo(const Eigen::Vector3d& origin , const Eigen::Vector3d& point);
 
- 
+     virtual int getCellIneterestCellType(double x, double y, double z) const ;
+
+    
+    
     virtual CellStatus getLineStatus(const Eigen::Vector3d& start,
                                      const Eigen::Vector3d& end) const;
     virtual CellStatus getVisibility(const Eigen::Vector3d& view_point,
@@ -217,6 +220,7 @@ public:
             const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
             pcl::PointCloud<pcl::PointXYZ>* output_cloud,
             const BoundHandling& insertion_method = BoundHandling::kDefault) const;
+
 
     // Structure: vector of pairs, key is the cube center and double is the
     // dimension of each side.

@@ -54,8 +54,8 @@ OctomapManager::OctomapManager(const ros::NodeHandle& nh,
       Q_initialized_(false),
       Q_(Eigen::Matrix4d::Identity()),
       full_image_size_(752, 480),
-      map_publish_frequency_(0.0) ,
-      tf_update_frequency_(5.0){ // R: ADDED THIS PARAM
+      map_publish_frequency_(1.0) ,
+      tf_update_frequency_(5.0)    { // R: ADDED THIS PARAM
     setParametersFromROS();
     subscribe();
     advertiseServices();

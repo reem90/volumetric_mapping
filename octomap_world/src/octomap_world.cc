@@ -541,6 +541,7 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     const double epsilon = 0.001;  // Small offset
     CellStatus ret = CellStatus::kFree;
     const double& resolution = getResolution();
+    ROS_INFO("getLineStatusBoundingBox resolution",resolution);
 
     // Check corner connections and depending on resolution also interior:
     // Discretization step is smaller than the octomap resolution, as this way
@@ -1657,7 +1658,6 @@ void OctomapWorld::UpdateID()
 
 void OctomapWorld::updateIntrestValue()
 {
-
     for (octomap::LabelOcTree::leaf_iterator it = octree_->begin_leafs(),
          end = octree_->end_leafs(); it != end; ++it) {
 
@@ -1673,7 +1673,7 @@ void OctomapWorld::updateIntrestValue()
             else
             {
                 //label.num_of_vis += 1;
-                if (label.num_of_vis > 10)
+                if (label.num_of_vis > 5)
                     label.type = octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_VISITED ;
                 else
                     label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED ;
@@ -1876,6 +1876,7 @@ double OctomapWorld::introduceNoise(int class_type_1 , int &class_index) {
     return class_certainty ;
 }
 
+// Not used
 OctomapWorld::CellStatus OctomapWorld::getCellIneterestGainPoint(
         const Eigen::Vector3d& point, double* gain) const {
     *gain = 0.0 ;
@@ -1894,7 +1895,29 @@ OctomapWorld::CellStatus OctomapWorld::getCellIneterestGainPoint(
     }
 }
 
+//Used
+int OctomapWorld::getCellIneterestCellType(double x, double y, double z) const {
 
+    octomap::LabelOcTreeNode* node = octree_->search(x, y, z);
+    if (node == NULL) {
+        return 1;
+    } else {
+        if (octree_->isNodeOccupied(node)) {
+            octomap::LabelOcTreeNode::Label& label = node->getLabel() ;
+            if(label.type == octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED)
+                return 2; 
+            else if (label.type == octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_VISITED)
+                return 3; 
+            else 
+                return 4; 
+        } else {
+            return 0;
+        }
+    }
+}
+
+
+// Used
 double OctomapWorld::getCellIneterestGain(
         const Eigen::Vector3d& point) const {
     octomap::LabelOcTreeNode* node = octree_->search(point.x(), point.y(), point.z());

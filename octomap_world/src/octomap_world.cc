@@ -162,6 +162,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
         const octomap::point3d p_G_point(it->x, it->y, it->z);
         // First, check if we've already checked this.
         octomap::OcTreeKey key = octree_->coordToKey(p_G_point);
+    
         if (occupied_cells.find(key) == occupied_cells.end()) {
             // Check if this is within the allowed sensor range.
             castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
@@ -174,10 +175,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     
     for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud->begin();
          it != cloud->end(); ++it) {
-        
-
         const octomap::point3d p_G_point(it->x, it->y, it->z);
-
         const octomap::point3d p_G_color((int)it->r,(int)it->g,(int)it->b) ;
 
         octomap::point3d direction = octomap::point3d(0,0,0) ;

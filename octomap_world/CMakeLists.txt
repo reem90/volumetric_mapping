@@ -5,18 +5,21 @@ find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 find_package(octomap REQUIRED)
 
-set(OCTOMAP_LIBRARIES_DIRS "/home/kuri/catkin_ws/src/octomap/lib")
-set(OCTOMAP_INCLUDE_DIRS "/home/kuri/catkin_ws/src/octomap/octomap/include")
+#find_package(octomap REQUIRED)
+include("/usr/local/share/octomap/octomap-config.cmake")
+
+#set(OCTOMAP_LIBRARIES_DIRS "/home/kuri/catkin_ws/src/octomap/lib")
+#set(OCTOMAP_INCLUDE_DIRS "/home/kuri/catkin_ws/src/octomap/octomap/include")
 # Set library names as absolute paths:
-set(OCTOMAP_LIBRARIES
-"/home/ku/catkin_ws/src/octomap/lib/liboctomap.so"
-"/home/ku/catkin_ws/src/octomap/lib/liboctomath.so"
-)
+#set(OCTOMAP_LIBRARIES
+#"/home/ku/catkin_ws/src/octomap/lib/liboctomap.so"
+#"/home/ku/catkin_ws/src/octomap/lib/liboctomath.so"
+#)
 
 
 
 add_definitions(-std=c++11)
-include_directories(${OCTOMAP_INCLUDE_DIRS})
+#include_directories(${OCTOMAP_INCLUDE_DIRS})
 
 
 #############

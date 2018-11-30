@@ -149,6 +149,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     // First, rotate the pointcloud into the world frame.
     pcl::transformPointCloud(*cloud, *cloud,
                              T_G_sensor.getTransformationMatrix());
+
     const octomap::point3d p_G_sensor =
             pointEigenToOctomap(T_G_sensor.getPosition());
 
@@ -168,13 +169,18 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
             castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
         }
     }
+    ROS_INFO("Update Occupancy 1" );
+
 
     // Apply the new free cells and occupied cells from
     updateOccupancy(&free_cells, &occupied_cells);
-    
+    ROS_INFO("Update Occupancy 1" );
+
     
     for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud->begin();
          it != cloud->end(); ++it) {
+       // ROS_INFO("iterate" );
+
         const octomap::point3d p_G_point(it->x, it->y, it->z);
         const octomap::point3d p_G_color((int)it->r,(int)it->g,(int)it->b) ;
 
@@ -188,6 +194,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
 
         int class_index  = -1  ;
         double certainty_val = introduceNoise(class_type_1,class_index) ;
+      //  ROS_INFO("introduceNoise" );
 
         int t =  octree_->castRay(p_G_sensor, direction, obstacle,false,0);
 
@@ -1663,7 +1670,7 @@ void OctomapWorld::updateIntrestValue()
         {
             octomap::LabelOcTreeNode& node = *it;
             octomap::LabelOcTreeNode::Label& label = node.getLabel();
-            if (label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_FLOOR || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_TABLE || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_WALL || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_NOT_LABELED)
+            if (label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_FLOOR || label.object_class == octomap::LabelOcTreeNode::Label::VOXEL_NOT_LABELED)
             {
                 label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_NOT_INTEREST ;
                 //label.num_of_vis += 1;
@@ -1671,7 +1678,7 @@ void OctomapWorld::updateIntrestValue()
             else
             {
                 //label.num_of_vis += 1;
-                if (label.num_of_vis > 5)
+                if (label.num_of_vis > 10)
                     label.type = octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_VISITED ;
                 else
                     label.type =  octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED ;
@@ -1798,7 +1805,7 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
         single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_WALL;
         single_voxel.r = 0;
         single_voxel.g = 1 ;
-        single_voxel.b = 1 ;
+        single_voxel.b = 0 ;
         // single_voxel.num_of_vis += 1 ;
     }
     else if (class_index == 2)
@@ -1825,8 +1832,6 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
         single_voxel.b = 0.196078431 ;
         //  single_voxel.num_of_vis += 1 ;
     }
-
-
 }
 
 int OctomapWorld::identifyClass(octomap::point3d point_senmantic_clolor) {
@@ -1838,13 +1843,13 @@ int OctomapWorld::identifyClass(octomap::point3d point_senmantic_clolor) {
     int class_type = -1;
     if (point_senmantic_clolor(0) == 0 && point_senmantic_clolor(1) == 0 && point_senmantic_clolor(2) == 255)
     {
-        //std::cout << "Floor" << std::endl << std::flush;
+        //std::cout << "Floor + Wall " << std::endl << std::flush;
         class_type =0 ;
     }
-    else if (point_senmantic_clolor(0) == 0 && point_senmantic_clolor(1) == 255 && point_senmantic_clolor(2) == 255)
+    else if (point_senmantic_clolor(0) == 0 && point_senmantic_clolor(1) == 255 && point_senmantic_clolor(2) == 0)
     {
-        //std::cout << "wall" << std::endl << std::flush;
-        class_type =1 ;
+       // std::cout << "Human" << std::endl << std::flush;
+        class_type = 1 ;
     }
     else if (point_senmantic_clolor(0) == 170 && (point_senmantic_clolor(1) >= 119 && point_senmantic_clolor(1) <= 120) &&  point_senmantic_clolor(2) == 200)
     {
@@ -1853,12 +1858,12 @@ int OctomapWorld::identifyClass(octomap::point3d point_senmantic_clolor) {
     }
     else if (point_senmantic_clolor(0) == 255 && point_senmantic_clolor(1) == 0 && point_senmantic_clolor(2) == 0)
     {
-        //std::cout << "chair" << std::endl << std::flush;
+       // std::cout << "chair" << std::endl << std::flush;
         class_type =3 ;
     }
     else
     {
-        // std::cout << "clutter" << std::endl << std::flush;
+       // std::cout << "clutter" << std::endl << std::flush;
         class_type =4 ;
     }
     return class_type ;

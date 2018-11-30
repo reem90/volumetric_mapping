@@ -486,12 +486,16 @@ void OctomapManager::insertPointcloudWithTf(
 
         const sensor_msgs::PointCloud2::ConstPtr& pointcloud) {
     // Look up transform from sensor frame to world frame.
-          //  ROS_INFO("pointcloud subsriber");
+    ROS_INFO("insertPointcloudWithTf Call");
+    std::cout << "World Frame " << world_frame_ << " Point cloud frame id " <<  pointcloud->header.frame_id   << std::endl << std::flush ;
+
     Transformation sensor_to_world;
     if (lookupTransform(pointcloud->header.frame_id, world_frame_,
                         pointcloud->header.stamp, &sensor_to_world)) {
         insertPointcloud(sensor_to_world, pointcloud);
     }
+
+
 }
 
 bool OctomapManager::lookupTransform(const std::string& from_frame,

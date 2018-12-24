@@ -581,7 +581,60 @@ bool OctomapWorld::getRearSideVoxel(
     }
 }
 
+double OctomapWorld::getRearSideEntropy(
+const Eigen::Vector3d& view_point, const Eigen::Vector3d& voxel_to_test) const {
+    double rearSideEntropyGain = 0 ;
+    double probability = 0 ;
+    // Get all node keys for this line.
+    // This is actually a typedef for a vector of OcTreeKeys.
+    // Can't use the key_ray_ temp member here because this is a const function.
+    octomap::KeyRay key_ray;
 
+    octree_->computeRayKeys(pointEigenToOctomap(view_point),
+                            pointEigenToOctomap(voxel_to_test), key_ray);
+
+    const octomap::OcTreeKey& voxel_to_test_key =
+            octree_->coordToKey(pointEigenToOctomap(voxel_to_test));
+
+    int i = 1 ;
+    std::cout << "SIZE OF THE RAY " << key_ray.size() << std::endl  ;
+    int s = key_ray.size() ;
+
+    for (octomap::OcTreeKey key : key_ray) {
+        std::cout << " Counter : " << i  << std::endl ;
+
+        if (key != voxel_to_test_key) {
+            octomap::OcTreeNode* node = octree_->search(key);
+
+            if (node == NULL) {
+                std::cout << "CellStatus::kUnknown" << std::endl ;
+            } else if (octree_->isNodeOccupied(node)) {
+                std::cout << "ERROOORRR CellStatus::kOccupied ERRORRRRR " << std::endl ;
+            }
+            else
+                std::cout <<  "CellStatus::kFree" << std::endl ;
+
+            octomap::point3d octomapPoint = octree_->keyToCoord(key)  ;
+
+            Eigen::Vector3d point = pointOctomapToEigen(octomapPoint) ;
+
+            if (node == NULL)
+                probability = 0.5 ;
+            else
+                probability = node->getOccupancy() ;
+
+            std::cout << "Occupancy " << probability << std::endl ;
+            //OctomapWorld::CellStatus  A  ;
+           //volumetric_mapping::OctomapWorld::getCellProbabilityPoint(point,probability) ;
+            rearSideEntropyGain = rearSideEntropyGain + probability ;
+
+        }
+        i = i + 1 ;
+
+    }
+
+
+}
 
 OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
         const Eigen::Vector3d& start, const Eigen::Vector3d& end,

@@ -211,6 +211,9 @@ public:
     virtual CellStatus getVisibility(const Eigen::Vector3d& view_point,
                                      const Eigen::Vector3d& voxel_to_test,
                                      bool stop_at_unknown_cell) const;
+
+    virtual bool getRearSideVoxel(const Eigen::Vector3d& view_point,
+				  const Eigen::Vector3d& voxel_to_test) const ;
     virtual CellStatus getLineStatusBoundingBox(
             const Eigen::Vector3d& start, const Eigen::Vector3d& end,
             const Eigen::Vector3d& bounding_box_size) const;

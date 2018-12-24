@@ -145,7 +145,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
 
     ROS_INFO("Sensor Point %f %f %f %f   %f   %f   %f ",T_G_sensor.getPosition().x(),T_G_sensor.getPosition().y(),T_G_sensor.getPosition().z(), T_G_sensor.getRotation().x() , T_G_sensor.getRotation().y() ,T_G_sensor.getRotation().z() ,T_G_sensor.getRotation().w() );
 
-    //std::cout << "Transformation Matrix" < T_G_sensor.getTransformationMatrix() << std::endl << std::flush ; 
+    //std::cout << "Transformation Matrix" < T_G_sensor.getTransformationMatrix() << std::endl << std::flush ;
     // First, rotate the pointcloud into the world frame.
     pcl::transformPointCloud(*cloud, *cloud,
                              T_G_sensor.getTransformationMatrix());
@@ -163,23 +163,23 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
         const octomap::point3d p_G_point(it->x, it->y, it->z);
         // First, check if we've already checked this.
         octomap::OcTreeKey key = octree_->coordToKey(p_G_point);
-    
+
         if (occupied_cells.find(key) == occupied_cells.end()) {
             // Check if this is within the allowed sensor range.
             castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
         }
     }
-    ROS_INFO("Update Occupancy 1" );
+    //ROS_INFO("Update Occupancy 1" );
 
 
     // Apply the new free cells and occupied cells from
     updateOccupancy(&free_cells, &occupied_cells);
-    ROS_INFO("Update Occupancy 1" );
+    //ROS_INFO("Update Occupancy 1" );
 
     
     for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud->begin();
          it != cloud->end(); ++it) {
-       // ROS_INFO("iterate" );
+        // ROS_INFO("iterate" );
 
         const octomap::point3d p_G_point(it->x, it->y, it->z);
         const octomap::point3d p_G_color((int)it->r,(int)it->g,(int)it->b) ;
@@ -194,7 +194,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
 
         int class_index  = -1  ;
         double certainty_val = introduceNoise(class_type_1,class_index) ;
-      //  ROS_INFO("introduceNoise" );
+        //  ROS_INFO("introduceNoise" );
 
         int t =  octree_->castRay(p_G_sensor, direction, obstacle,false,0);
 
@@ -204,14 +204,14 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
             
             if (octree_->isNodeOccupied(node))
             {
-               // ROS_INFO("******Debug2******") ;
+                // ROS_INFO("******Debug2******") ;
                 updateSingleVoxelInfo(node, class_index , certainty_val ) ;
-               // ROS_INFO("******update******") ;
+                // ROS_INFO("******update******") ;
 
             }
         }
-//        else
-//            ROS_INFO("cast ray return false");
+        //        else
+        //            ROS_INFO("cast ray return false");
     }
 
 
@@ -338,7 +338,7 @@ void OctomapWorld::updateOccupancy(octomap::KeySet* free_cells,
                                    octomap::KeySet* occupied_cells) {
     CHECK_NOTNULL(free_cells);
     CHECK_NOTNULL(occupied_cells);
-    //ROS_ERROR("updateOccupancy"); 
+    //ROS_ERROR("updateOccupancy");
     // Mark occupied cells.
     for (octomap::KeySet::iterator it = occupied_cells->begin(),
          end = occupied_cells->end();
@@ -537,6 +537,52 @@ OctomapWorld::CellStatus OctomapWorld::getVisibility(
     return CellStatus::kFree;
 }
 
+bool OctomapWorld::getRearSideVoxel(
+        const Eigen::Vector3d& view_point, const Eigen::Vector3d& voxel_to_test) const {
+    // Get all node keys for this line.
+    // This is actually a typedef for a vector of OcTreeKeys.
+    // Can't use the key_ray_ temp member here because this is a const function.
+    octomap::KeyRay key_ray;
+
+    octree_->computeRayKeys(pointEigenToOctomap(view_point),
+                            pointEigenToOctomap(voxel_to_test), key_ray);
+
+    const octomap::OcTreeKey& voxel_to_test_key =
+            octree_->coordToKey(pointEigenToOctomap(voxel_to_test));
+
+    int i = 1 ;
+    std::cout << "SIZE OF THE RAY " << key_ray.size() << std::endl  ;
+    int s = key_ray.size() ;
+
+    for (octomap::OcTreeKey key : key_ray) {
+        std::cout << " Counter : " << i  << std::endl ;
+
+        if (key != voxel_to_test_key) {
+            octomap::OcTreeNode* node = octree_->search(key);
+            if (node == NULL) {
+                std::cout << "CellStatus::kUnknown" << std::endl ;
+            } else if (octree_->isNodeOccupied(node)) {
+                std::cout << "CellStatus::kOccupied" << std::endl ;
+            }
+            else
+                std::cout <<  "CellStatus::kFree" << std::endl ;
+
+            if ( i == s )
+            {
+                std::cout << "Last voxel" << std::endl ;
+                if (node == NULL)
+                    return true ;
+                else
+                    return false ;
+            }
+        }
+        i = i + 1 ;
+
+    }
+}
+
+
+
 OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
         const Eigen::Vector3d& start, const Eigen::Vector3d& end,
         const Eigen::Vector3d& bounding_box_size) const {
@@ -546,13 +592,17 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     const double epsilon = 0.001;  // Small offset
     CellStatus ret = CellStatus::kFree;
     const double& resolution = getResolution();
-    ROS_INFO("getLineStatusBoundingBox resolution",resolution);
+
+    // ROS_INFO("getLineStatusBoundingBox \n resolution %f",resolution);
 
     // Check corner connections and depending on resolution also interior:
     // Discretization step is smaller than the octomap resolution, as this way
     // no cell can possibly be missed
+    //ROS_INFO("bounding_box_size.x()  %f",bounding_box_size.x() );
+
     double x_disc = bounding_box_size.x() /
             ceil((bounding_box_size.x() + epsilon) / resolution);
+
     double y_disc = bounding_box_size.y() /
             ceil((bounding_box_size.y() + epsilon) / resolution);
     double z_disc = bounding_box_size.z() /
@@ -562,8 +612,13 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     if (x_disc <= 0.0) x_disc = 1.0;
     if (y_disc <= 0.0) y_disc = 1.0;
     if (z_disc <= 0.0) z_disc = 1.0;
+    // ROS_INFO("x_disc %f",x_disc);
+    // ROS_INFO("y_disc %f",y_disc);
+    // ROS_INFO("z_disc %f",z_disc);
 
     const Eigen::Vector3d bounding_box_half_size = bounding_box_size * 0.5;
+    //ROS_INFO("bounding_box_size %f %f %f",bounding_box_size.x() , bounding_box_size.y() , bounding_box_size.z() );
+    //ROS_INFO("bounding_box_half_size %f %f %f %f ",bounding_box_half_size.x(),bounding_box_half_size.y(),bounding_box_half_size.z());
 
     for (double x = -bounding_box_half_size.x(); x <= bounding_box_half_size.x();
          x += x_disc) {
@@ -574,6 +629,7 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
                 Eigen::Vector3d offset(x, y, z);
                 ret = getLineStatus(start + offset, end + offset);
                 if (ret != CellStatus::kFree) {
+                    //  ROS_INFO("NOT FREEEE") ;
                     return ret;
                 }
             }
@@ -582,7 +638,9 @@ OctomapWorld::CellStatus OctomapWorld::getLineStatusBoundingBox(
     return CellStatus::kFree;
 }
 
-double OctomapWorld::getResolution() const { return octree_->getResolution(); }
+double OctomapWorld::getResolution() const {
+    return octree_->getResolution();
+}
 void OctomapWorld::setFree(const Eigen::Vector3d& position,
                            const Eigen::Vector3d& bounding_box_size,
                            const BoundHandling& insertion_method) {
@@ -1689,19 +1747,19 @@ void OctomapWorld::updateIntrestValue()
 
 
 double OctomapWorld::UpdateNumberofVisits(geometry_msgs::Pose p){
-   // ROS_INFO("UpdateNumberofVisits");
+    // ROS_INFO("UpdateNumberofVisits");
     std::vector<std::vector<Eigen::Vector3d> > cam_bound_normals;
     double pitch = M_PI * 15 / 180.0; // conert to R
-   // ROS_INFO("pitch %f",pitch);
+    // ROS_INFO("pitch %f",pitch);
 
     double camTop = (pitch - M_PI * 45/ 360.0) + M_PI / 2.0;
-   // ROS_INFO("camTop %f",camTop);
+    // ROS_INFO("camTop %f",camTop);
 
     double camBottom = (pitch + M_PI * 45 / 360.0) - M_PI / 2.0;
-   // ROS_INFO("camBottom %f",camBottom);
+    // ROS_INFO("camBottom %f",camBottom);
 
     double side = M_PI * (58) / 360.0 - M_PI / 2.0;
-   // ROS_INFO("side %f",side);
+    // ROS_INFO("side %f",side);
 
     Eigen::Vector3d bottom(cos(camBottom), 0.0, -sin(camBottom));
     Eigen::Vector3d top(cos(camTop), 0.0, -sin(camTop));
@@ -1771,7 +1829,7 @@ double OctomapWorld::UpdateNumberofVisits(geometry_msgs::Pose p){
 
             continue;
         }
-       //ROS_INFO("FOUND ******************************************************************");
+        //ROS_INFO("FOUND ******************************************************************");
 
         // only update the ones on the FOV
         octomap::LabelOcTreeNode& node = *it;
@@ -1848,22 +1906,22 @@ int OctomapWorld::identifyClass(octomap::point3d point_senmantic_clolor) {
     }
     else if (point_senmantic_clolor(0) == 0 && point_senmantic_clolor(1) == 255 && point_senmantic_clolor(2) == 0)
     {
-       // std::cout << "Human" << std::endl << std::flush;
+        // std::cout << "Human" << std::endl << std::flush;
         class_type = 1 ;
     }
     else if (point_senmantic_clolor(0) == 170 && (point_senmantic_clolor(1) >= 119 && point_senmantic_clolor(1) <= 120) &&  point_senmantic_clolor(2) == 200)
     {
-       // std::cout << "table" << std::endl << std::flush;
+        // std::cout << "table" << std::endl << std::flush;
         class_type =2 ;
     }
     else if (point_senmantic_clolor(0) == 255 && point_senmantic_clolor(1) == 0 && point_senmantic_clolor(2) == 0)
     {
-       // std::cout << "chair" << std::endl << std::flush;
+        // std::cout << "chair" << std::endl << std::flush;
         class_type =3 ;
     }
     else
     {
-       // std::cout << "clutter" << std::endl << std::flush;
+        // std::cout << "clutter" << std::endl << std::flush;
         class_type =4 ;
     }
     return class_type ;
@@ -1908,11 +1966,11 @@ int OctomapWorld::getCellIneterestCellType(double x, double y, double z) const {
         if (octree_->isNodeOccupied(node)) {
             octomap::LabelOcTreeNode::Label& label = node->getLabel() ;
             if(label.type == octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_NOT_VISITED)
-                return 2; 
+                return 2;
             else if (label.type == octomap::LabelOcTreeNode::Label::VOXEL_OCCUPIED_INTEREST_VISITED)
-                return 3; 
-            else 
-                return 4; 
+                return 3;
+            else
+                return 4;
         } else {
             return 0;
         }

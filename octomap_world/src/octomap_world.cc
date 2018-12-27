@@ -143,7 +143,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
 
-    ROS_INFO("Sensor Point %f %f %f %f   %f   %f   %f ",T_G_sensor.getPosition().x(),T_G_sensor.getPosition().y(),T_G_sensor.getPosition().z(), T_G_sensor.getRotation().x() , T_G_sensor.getRotation().y() ,T_G_sensor.getRotation().z() ,T_G_sensor.getRotation().w() );
+    ROS_INFO("Sensor Point %f %f %f %f   %f   %f   %f , cloud size:%d",T_G_sensor.getPosition().x(),T_G_sensor.getPosition().y(),T_G_sensor.getPosition().z(), T_G_sensor.getRotation().x() , T_G_sensor.getRotation().y() ,T_G_sensor.getRotation().z() ,T_G_sensor.getRotation().w(), cloud->size() );
 
     //std::cout << "Transformation Matrix" < T_G_sensor.getTransformationMatrix() << std::endl << std::flush ;
     // First, rotate the pointcloud into the world frame.
@@ -157,10 +157,15 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     // We do this as a batch operation - so first get all the keys in a set, then
     // do the update in batch.
     octomap::KeySet free_cells, occupied_cells;
+    //octomap::Pointcloud cloud_octo;
     for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud->begin();
          it != cloud->end(); ++it) {
 
         const octomap::point3d p_G_point(it->x, it->y, it->z);
+        //cloud_octo.push_back( p_G_point );
+        // There is a bug in the call below, check this: https://github.com/ethz-asl/nbvplanner/issues/16 and a better solution
+        // can be found here: https://github.com/ethz-asl/volumetric_mapping/pull/66/files
+
         // First, check if we've already checked this.
         octomap::OcTreeKey key = octree_->coordToKey(p_G_point);
 
@@ -168,12 +173,11 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
             // Check if this is within the allowed sensor range.
             castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
         }
+
     }
-    //ROS_INFO("Update Occupancy 1" );
-
-
     // Apply the new free cells and occupied cells from
     updateOccupancy(&free_cells, &occupied_cells);
+
     //ROS_INFO("Update Occupancy 1" );
 
     
@@ -197,7 +201,6 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
         //  ROS_INFO("introduceNoise" );
 
         int t =  octree_->castRay(p_G_sensor, direction, obstacle,false,0);
-
         if(t)
         {
             octomap::LabelOcTreeNode* node = octree_->search(obstacle);
@@ -214,7 +217,6 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
         //            ROS_INFO("cast ray return false");
     }
 
-
     geometry_msgs::Pose p ;
     p.position.x =  T_G_sensor.getPosition().x();
     p.position.y =  T_G_sensor.getPosition().y();
@@ -228,7 +230,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     UpdateNumberofVisits(p);
     //ROS_INFO("v-----------------------------------------------");
     updateIntrestValue() ;
-    updateOccupancy(&free_cells, &occupied_cells);
+    updateOccupancy(&free_cells, &occupied_cells); 
     //ROS_INFO("enddd-----------------------------------------------");
 }
 
@@ -267,65 +269,60 @@ void OctomapWorld::insertProjectedDisparityIntoMapImpl(
     updateOccupancy(&free_cells, &occupied_cells);
 }
 
-
-int OctomapWorld::castRay(const octomap::point3d& sensor_origin,
-                          const octomap::point3d& point,
-                          octomap::KeySet* free_cells,
-                          octomap::KeySet* occupied_cells) const {
-
-    //ROS_INFO("CAST                   RAY ") ;
+void OctomapWorld::castRay(const octomap::point3d& sensor_origin,
+                           const octomap::point3d& point,
+                           octomap::KeySet* free_cells,
+                           octomap::KeySet* occupied_cells) {
     CHECK_NOTNULL(free_cells);
     CHECK_NOTNULL(occupied_cells);
-    int res = 0;
+
     if (params_.sensor_max_range < 0.0 ||
-            (point - sensor_origin).norm() <= params_.sensor_max_range) {
-        // Cast a ray to compute all the free cells.
-        octomap::KeyRay key_ray;
-        if (octree_->computeRayKeys(sensor_origin, point, key_ray)) {
-            if (params_.max_free_space == 0.0) {
-                free_cells->insert(key_ray.begin(), key_ray.end());
-            } else {
-                for (const auto& key : key_ray) {
-                    octomap::point3d voxel_coordinate = octree_->keyToCoord(key);
-                    if ((voxel_coordinate - sensor_origin).norm() <
-                            params_.max_free_space ||
-                            voxel_coordinate.z() >
-                            (sensor_origin.z() - params_.min_height_free_space)) {
-                        free_cells->insert(key);
-                    }
-                }
+        (point - sensor_origin).norm() <= params_.sensor_max_range) {
+      // Cast a ray to compute all the free cells.
+      key_ray_.reset();
+      if (octree_->computeRayKeys(sensor_origin, point, key_ray_)) {
+        if (params_.max_free_space == 0.0) {
+          free_cells->insert(key_ray_.begin(), key_ray_.end());
+        } else {
+          for (const auto& key : key_ray_) {
+            octomap::point3d voxel_coordinate = octree_->keyToCoord(key);
+            if ((voxel_coordinate - sensor_origin).norm() <
+                    params_.max_free_space ||
+                voxel_coordinate.z() >
+                    (sensor_origin.z() - params_.min_height_free_space)) {
+              free_cells->insert(key);
             }
+          }
         }
-        // Mark endpoing as occupied.
-        octomap::OcTreeKey key;
-        if (octree_->coordToKeyChecked(point, key)) {
-            occupied_cells->insert(key);
-            res=1;
-        }
+      }
+      // Mark endpoing as occupied.
+      octomap::OcTreeKey key;
+      if (octree_->coordToKeyChecked(point, key)) {
+        occupied_cells->insert(key);
+      }
     } else {
-        // If the ray is longer than the max range, just update free space.
-        octomap::point3d new_end =
-                sensor_origin +
-                (point - sensor_origin).normalized() * params_.sensor_max_range;
-        octomap::KeyRay key_ray;
-        if (octree_->computeRayKeys(sensor_origin, new_end, key_ray)) {
-            if (params_.max_free_space == 0.0) {
-                free_cells->insert(key_ray.begin(), key_ray.end());
-            } else {
-                for (const auto& key : key_ray) {
-                    octomap::point3d voxel_coordinate = octree_->keyToCoord(key);
-                    if ((voxel_coordinate - sensor_origin).norm() <
-                            params_.max_free_space ||
-                            voxel_coordinate.z() >
-                            (sensor_origin.z() - params_.min_height_free_space)) {
-                        free_cells->insert(key);
-                    }
-                }
+      // If the ray is longer than the max range, just update free space.
+      octomap::point3d new_end =
+          sensor_origin +
+          (point - sensor_origin).normalized() * params_.sensor_max_range;
+      key_ray_.reset();
+      if (octree_->computeRayKeys(sensor_origin, new_end, key_ray_)) {
+        if (params_.max_free_space == 0.0) {
+          free_cells->insert(key_ray_.begin(), key_ray_.end());
+        } else {
+          for (const auto& key : key_ray_) {
+            octomap::point3d voxel_coordinate = octree_->keyToCoord(key);
+            if ((voxel_coordinate - sensor_origin).norm() <
+                    params_.max_free_space ||
+                voxel_coordinate.z() >
+                    (sensor_origin.z() - params_.min_height_free_space)) {
+              free_cells->insert(key);
             }
+          }
         }
+      }
     }
-    return res ;
-}
+  }
 
 
 bool OctomapWorld::isValidPoint(const cv::Vec3f& point) const {

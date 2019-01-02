@@ -213,9 +213,8 @@ public:
                                      bool stop_at_unknown_cell) const;
     virtual bool getRearSideVoxel(const Eigen::Vector3d& view_point,
 				  const Eigen::Vector3d& voxel_to_test) const ;
-    virtual double getRearSideEntropy(const Eigen::Vector3d& view_point, 
-				      const Eigen::Vector3d& voxel_to_test) const  ; 
-
+    virtual double getVisibilityLikelihood(const Eigen::Vector3d& view_point,
+					   const Eigen::Vector3d& voxel_to_test) const ;
     virtual CellStatus getLineStatusBoundingBox(
             const Eigen::Vector3d& start, const Eigen::Vector3d& end,
             const Eigen::Vector3d& bounding_box_size) const;
@@ -225,6 +224,7 @@ public:
             const Eigen::Vector3d& center, const Eigen::Vector3d& bounding_box_size,
             pcl::PointCloud<pcl::PointXYZ>* output_cloud,
             const BoundHandling& insertion_method = BoundHandling::kDefault) const;
+
 
 
     // Structure: vector of pairs, key is the cube center and double is the

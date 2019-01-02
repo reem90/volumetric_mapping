@@ -534,7 +534,7 @@ OctomapWorld::CellStatus OctomapWorld::getVisibility(
     return CellStatus::kFree;
 }
 
-
+// returns true if the last voxel in the ray was unknown(rear side).
 bool OctomapWorld::getRearSideVoxel(
         const Eigen::Vector3d& view_point, const Eigen::Vector3d& voxel_to_test) const {
     // Get all node keys for this line.
@@ -579,7 +579,7 @@ bool OctomapWorld::getRearSideVoxel(
     }
 }
 
-
+//returns the visibility likelihood for a ray from voxel 1 to n-1
 double OctomapWorld::getVisibilityLikelihood(
         const Eigen::Vector3d& view_point, const Eigen::Vector3d& voxel_to_test) const {
     // Get all node keys for this line.
@@ -1981,6 +1981,7 @@ OctomapWorld::CellStatus OctomapWorld::getCellIneterestGainPoint(
 }
 
 //Used
+// returbs a number that indicates the proposed type from octomap
 int OctomapWorld::getCellIneterestCellType(double x, double y, double z) const {
 
     octomap::LabelOcTreeNode* node = octree_->search(x, y, z);
@@ -2003,6 +2004,7 @@ int OctomapWorld::getCellIneterestCellType(double x, double y, double z) const {
 
 
 // Used
+// returns an interest value for the different voxels type.
 double OctomapWorld::getCellIneterestGain(
         const Eigen::Vector3d& point) const {
     octomap::LabelOcTreeNode* node = octree_->search(point.x(), point.y(), point.z());

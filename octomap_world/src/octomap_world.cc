@@ -44,11 +44,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace volumetric_mapping {
 
-
-
-
-
-
 bool flag_first_time = true ;
 int s ;
 int pre_index ;
@@ -143,7 +138,7 @@ void OctomapWorld::insertPointcloudColorIntoMapImpl(
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
 
-    ROS_INFO("Sensor Point %f %f %f %f   %f   %f   %f , cloud size:%d",T_G_sensor.getPosition().x(),T_G_sensor.getPosition().y(),T_G_sensor.getPosition().z(), T_G_sensor.getRotation().x() , T_G_sensor.getRotation().y() ,T_G_sensor.getRotation().z() ,T_G_sensor.getRotation().w(), cloud->size() );
+    //ROS_INFO("Sensor Point %f %f %f %f   %f   %f   %f , cloud size:%d",T_G_sensor.getPosition().x(),T_G_sensor.getPosition().y(),T_G_sensor.getPosition().z(), T_G_sensor.getRotation().x() , T_G_sensor.getRotation().y() ,T_G_sensor.getRotation().z() ,T_G_sensor.getRotation().w(), cloud->size() );
 
     //std::cout << "Transformation Matrix" < T_G_sensor.getTransformationMatrix() << std::endl << std::flush ;
     // First, rotate the pointcloud into the world frame.

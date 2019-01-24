@@ -188,39 +188,17 @@ Eigen::Matrix4d WorldBase::generateQ(double Tx, double left_cx, double left_cy,
 void WorldBase::insertPointcloud(
         const Transformation& T_G_sensor,
         const sensor_msgs::PointCloud2::ConstPtr& pointcloud_sensor) {
-
-    //  pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
-    //      new pcl::PointCloud<pcl::PointXYZ>);
-    //  pcl::fromROSMsg(*pointcloud_sensor, *pointcloud_sensor_pcl);
-    //  insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
-
-
+/*
+      pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud_sensor_pcl(
+          new pcl::PointCloud<pcl::PointXYZ>);
+      pcl::fromROSMsg(*pointcloud_sensor, *pointcloud_sensor_pcl);
+      insertPointcloud(T_G_sensor, pointcloud_sensor_pcl);
+*/
     // ADDED BY  R
+
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointcloud_sensor_pcl_rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
-
-
     pcl::fromROSMsg(*pointcloud_sensor, *pointcloud_sensor_pcl_rgb);
-
-
-    // *************** DEBUGGING *********************************************************** //
-    //std::cout << "points size " << pointcloud_sensor_pcl_rgb->points.size() ;
-    //std::cout << "Cloud Size " << pointcloud_sensor_pcl_rgb->points.size()  << std::endl ;
-    //    for (int i = 0 ; i < pointcloud_sensor_pcl_rgb->points.size()  ; i++ )
-    //    {
-    //        std::cout << "pointcloud_sensor" << sensor_msgs::PointCloud2[0] << sensor_msgs::PointCloud2[4] << sensor_msgs::PointCloud2[5] << std::endl ;
-    //    }
-    //for (int i = 0 ; i < pointcloud_sensor_pcl_rgb->points.size()  ; i++ )
-    //  {
-    //std::cout << "pointcloud_sensor_pcl_rgb->points[i].rgb" << pointcloud_sensor_pcl_rgb->points[i].rgb << std::endl ;
-    //uint32_t rgb = *reinterpret_cast<int*>(&pointcloud_sensor_pcl_rgb->points[i].rgb);
-    // uint8_t r = (rgb >> 16) & 0x0000ff;
-    //uint8_t g = (rgb >> 8) & 0x0000ff;
-    //uint8_t b = (rgb) & 0x0000ff;
-    //std::cout << "Point Color" << pointcloud_sensor_pcl_rgb->points[i].x << "  "  <<pointcloud_sensor_pcl_rgb->points[i].y << "  "  <<pointcloud_sensor_pcl_rgb->points[i].z << "  "  <<r << "  "  <<g << "  "  <<b << "  "  <<std::endl ;
-    //  }
-    // ************************************ //
     insertPointcloud2(T_G_sensor, pointcloud_sensor_pcl_rgb);
-
 
 }
 
@@ -255,18 +233,18 @@ void WorldBase::insertPointcloud2(
         const Transformation& T_G_sensor,
         const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& pointcloud_sensor)
 {
-    //    if (!isPointWeighingSet()) {
-    //        insertPointcloudColorIntoMapImpl(T_G_sensor, pointcloud_sensor);
-    //    } else {
+    if (!isPointWeighingSet())
+    {
+        insertPointcloudColorIntoMapImpl(T_G_sensor, pointcloud_sensor);
+    }
+    //else {
     //        std::vector<double> weights;
     //        // computeWeights(pointcloud_sensor, &weights);
     //        //insertPointcloudColorIntoMapWithWeightsImpl(T_G_sensor, pointcloud_sensor,
     //        //   weights);
     //    }
 
-
-
-    insertPointcloudColorIntoMapImpl(T_G_sensor, pointcloud_sensor);
+    //insertPointcloudColorIntoMapImpl(T_G_sensor, pointcloud_sensor);
 }
 
 

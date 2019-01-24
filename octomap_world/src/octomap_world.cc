@@ -130,98 +130,71 @@ void OctomapWorld::insertPointcloudIntoMapImpl(
 
 }
 
-
 void OctomapWorld::insertPointcloudColorIntoMapImpl(
         const Transformation& T_G_sensor,
-        const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud) {
+        const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud)
+{
     // Remove NaN values, if any.
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
-
-    //ROS_INFO("Sensor Point %f %f %f %f   %f   %f   %f , cloud size:%d",T_G_sensor.getPosition().x(),T_G_sensor.getPosition().y(),T_G_sensor.getPosition().z(), T_G_sensor.getRotation().x() , T_G_sensor.getRotation().y() ,T_G_sensor.getRotation().z() ,T_G_sensor.getRotation().w(), cloud->size() );
-
-    //std::cout << "Transformation Matrix" < T_G_sensor.getTransformationMatrix() << std::endl << std::flush ;
     // First, rotate the pointcloud into the world frame.
     pcl::transformPointCloud(*cloud, *cloud,
                              T_G_sensor.getTransformationMatrix());
-
     const octomap::point3d p_G_sensor =
             pointEigenToOctomap(T_G_sensor.getPosition());
 
-    // Then add all the rays from this pointcloud.
-    // We do this as a batch operation - so first get all the keys in a set, then
-    // do the update in batch.
-    octomap::KeySet free_cells, occupied_cells;
-    //octomap::Pointcloud cloud_octo;
+    octomap::KeySet free_cells, occupied_cells,ray_occupied_cells;
+     int classType, classIndex;
+    double certainityVal;
     for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud->begin();
          it != cloud->end(); ++it) {
-
+        ray_occupied_cells.clear();
         const octomap::point3d p_G_point(it->x, it->y, it->z);
         //cloud_octo.push_back( p_G_point );
         // There is a bug in the call below, check this: https://github.com/ethz-asl/nbvplanner/issues/16 and a better solution
         // can be found here: https://github.com/ethz-asl/volumetric_mapping/pull/66/files
 
-        // First, check if we've already checked this.
         octomap::OcTreeKey key = octree_->coordToKey(p_G_point);
 
+        // First, check if we've already checked this.
         if (occupied_cells.find(key) == occupied_cells.end()) {
             // Check if this is within the allowed sensor range.
-            castRay(p_G_sensor, p_G_point, &free_cells, &occupied_cells);
+            castRay(p_G_sensor, p_G_point, &free_cells, &ray_occupied_cells);
         }
 
-    }
-    // Apply the new free cells and occupied cells from
-    updateOccupancy(&free_cells, &occupied_cells);
-
-    //ROS_INFO("Update Occupancy 1" );
-
-    
-    for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud->begin();
-         it != cloud->end(); ++it) {
-        // ROS_INFO("iterate" );
-
-        const octomap::point3d p_G_point(it->x, it->y, it->z);
         const octomap::point3d p_G_color((int)it->r,(int)it->g,(int)it->b) ;
+        classType  = identifyClass(p_G_color);
+        classIndex = -1;
+        certainityVal = introduceNoise(classType,classIndex) ;
 
-        octomap::point3d direction = octomap::point3d(0,0,0) ;
-        octomap::point3d obstacle (0,0,0);
-        direction.x() = p_G_point.x() - p_G_sensor.x() ;
-        direction.y() = p_G_point.y() - p_G_sensor.y() ;
-        direction.z() = p_G_point.z() - p_G_sensor.z() ;
-
-        int class_type_1 = identifyClass(p_G_color);
-
-        int class_index  = -1  ;
-        double certainty_val = introduceNoise(class_type_1,class_index) ;
-        //  ROS_INFO("introduceNoise" );
-
-        int t =  octree_->castRay(p_G_sensor, direction, obstacle,false,0);
-        if(t)
+        for(octomap::OcTreeKey key : ray_occupied_cells)
         {
-            octomap::LabelOcTreeNode* node = octree_->search(obstacle);
-            
-            if (octree_->isNodeOccupied(node))
+            octree_->updateNode(key,true);
+            if (free_cells.find(key) != free_cells.end())
             {
-                // ROS_INFO("******Debug2******") ;
-                updateSingleVoxelInfo(node, class_index , certainty_val ) ;
-                // ROS_INFO("******update******") ;
-
+                free_cells.erase(key);
             }
+            octomap::LabelOcTreeNode* node = octree_->search(key);
+            updateSingleVoxelInfo(node, classIndex , certainityVal ) ;
+            occupied_cells.insert(key);
         }
-        //        else
-        //            ROS_INFO("cast ray return false");
     }
+    for(octomap::OcTreeKey key : free_cells)
+    {
+        octree_->updateNode(key,false);
+    }
+    // No need for updateOccupancy, I am doing it manually above, just use updateInnerOccupancy
+    octree_->updateInnerOccupancy();
 
     geometry_msgs::Pose p ;
-    p.position.x =  T_G_sensor.getPosition().x();
-    p.position.y =  T_G_sensor.getPosition().y();
-    p.position.z =  T_G_sensor.getPosition().z();
+    p.position.x    = T_G_sensor.getPosition().x();
+    p.position.y    = T_G_sensor.getPosition().y();
+    p.position.z    = T_G_sensor.getPosition().z();
     p.orientation.x = T_G_sensor.getRotation().x();
     p.orientation.y = T_G_sensor.getRotation().y();
     p.orientation.z = T_G_sensor.getRotation().z();
     p.orientation.w = T_G_sensor.getRotation().w();
     //ROS_INFO("******Number of Visits ****** %f   %f   %f   %f   %f   %f   %f", p.position.x,p.position.y , p.position.z, p.orientation.x , p.orientation.y , p.orientation.z , p.orientation.w ) ;
-
     UpdateNumberofVisits(p);
     //ROS_INFO("v-----------------------------------------------");
     updateIntrestValue() ;
@@ -1747,8 +1720,6 @@ void OctomapWorld::UpdateID()
 
 }
 
-
-
 void OctomapWorld::updateIntrestValue()
 {
     for (octomap::LabelOcTree::leaf_iterator it = octree_->begin_leafs(),
@@ -1807,7 +1778,6 @@ double OctomapWorld::UpdateNumberofVisits(geometry_msgs::Pose p){
     cam_bound_normals_a.push_back(Eigen::Vector3d(leftR.x(), leftR.y(), leftR.z()));
     cam_bound_normals.push_back(cam_bound_normals_a);
     //ROS_INFO("cam_bound_normals size %f",cam_bound_normals.size());
-
 
     Eigen::Vector3d origin(p.position.x, p.position.y, p.position.z);
     tf::Quaternion or_orientation(p.orientation.x,p.orientation.y, p.orientation.z, p.orientation.w);
@@ -1870,16 +1840,23 @@ double OctomapWorld::UpdateNumberofVisits(geometry_msgs::Pose p){
 }
 
 
-void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class_index , double certainty_val )
+void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class_index , double certainty_val)
 {
-    //ROS_INFO("UPDATE Voxels Info");
+    //ROS_INFO("UPDATE Voxels Info 1");
     //std::cout << "INDEX " << class_index << " Cer" << certainty_val << std::endl << std::flush ;
     //we can fill the color as well
     //octomap::LabelOcTreeNode::Label single_voxel =node->getLabel() ;
     //std::cout << single_voxel.object_ID ;
+    CHECK_NOTNULL(n);
+    if(n==nullptr)
+    {
+        ROS_INFO("I've been nullified");
+    }
 
     octomap::LabelOcTreeNode::Label& single_voxel =n->getLabel() ;
-    single_voxel.object_certainty = certainty_val ;
+    //ROS_INFO("UPDATE Voxels Info 2");
+    //single_voxel.object_certainty = certainty_val ;
+    //ROS_INFO("UPDATE Voxels Info 3");
     if (class_index == 0 )
     {
         single_voxel.object_class = octomap::LabelOcTreeNode::Label::VOXEL_FLOOR;
@@ -1920,6 +1897,7 @@ void OctomapWorld::updateSingleVoxelInfo(octomap::LabelOcTreeNode * n, int class
         single_voxel.b = 0.196078431 ;
         //  single_voxel.num_of_vis += 1 ;
     }
+    //ROS_INFO("UPDATE Voxels Info 4");
 }
 
 int OctomapWorld::identifyClass(octomap::point3d point_senmantic_clolor) {

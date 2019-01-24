@@ -276,7 +276,8 @@ void OctomapManager::advertisePublishers() {
 }
 
 void OctomapManager::publishAll() {
-    //ROS_INFO("publishAll") ;
+    ROS_INFO("publishAll") ;
+    ros::Time tic = ros::Time::now();
     if (latch_topics_ || occupied_nodes_pub_.getNumSubscribers() > 0 ||
             free_nodes_pub_.getNumSubscribers() > 0) {
        // ROS_INFO("publishAll TRUE") ;
@@ -324,6 +325,8 @@ void OctomapManager::publishAll() {
             nearest_obstacle_pub_.publish(cloud);
         }
     }
+    ros::Time toc = ros::Time::now();
+    ROS_INFO("Map Publishing Freq:%f Publishing All Took: %f",map_publish_frequency_, (toc-tic).toSec());
 }
 
 void OctomapManager::publishAllEvent(const ros::TimerEvent& e) { publishAll(); }
@@ -482,20 +485,14 @@ void OctomapManager::insertDisparityImageWithTf(
     }
 }
 
-void OctomapManager::insertPointcloudWithTf(
-
-        const sensor_msgs::PointCloud2::ConstPtr& pointcloud) {
-    // Look up transform from sensor frame to world frame.
-    //ROS_INFO("insertPointcloudWithTf Call");
-   // std::cout << "World Frame " << world_frame_ << " Point cloud frame id " <<  pointcloud->header.frame_id   << std::endl << std::flush ;
-
+void OctomapManager::insertPointcloudWithTf(const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
+{
     Transformation sensor_to_world;
     if (lookupTransform(pointcloud->header.frame_id, world_frame_,
-                        pointcloud->header.stamp, &sensor_to_world)) {
+                        pointcloud->header.stamp, &sensor_to_world))
+    {
         insertPointcloud(sensor_to_world, pointcloud);
     }
-
-
 }
 
 bool OctomapManager::lookupTransform(const std::string& from_frame,
